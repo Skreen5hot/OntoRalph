@@ -310,7 +310,7 @@ class TurtleDiff:
         }
 
     def format_diff_text(
-        self, old_definition: str, new_definition: str, context: int = 0
+        self, old_definition: str, new_definition: str, _context: int = 0
     ) -> str:
         """Format a text-based diff between definitions.
 
