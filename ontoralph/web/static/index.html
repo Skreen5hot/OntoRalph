@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OntoRalph - Definition Refinement</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body x-data="app()" x-init="init()" :class="{ 'dark': theme === 'dark' || (theme === 'system' && prefersDark) }">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <h1 class="logo">OntoRalph</h1>
+            <span class="version" x-text="'v' + serverVersion"></span>
+        </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <nav class="tabs" role="tablist">
+        <button
+            type="button"
+            class="tab"
+            :class="{ 'active': activeTab === 'validate' }"
+            @click="activeTab = 'validate'"
+            role="tab"
+            :aria-selected="activeTab === 'validate'"
+            title="Ctrl+1">
+            Validate
+        </button>
+        <button
+            type="button"
+            class="tab"
+            :class="{ 'active': activeTab === 'run' }"
+            @click="activeTab = 'run'"
+            role="tab"
+            :aria-selected="activeTab === 'run'"
+            title="Ctrl+2">
+            Run
+        </button>
+        <button
+            type="button"
+            class="tab"
+            :class="{ 'active': activeTab === 'batch' }"
+            @click="activeTab = 'batch'"
+            role="tab"
+            :aria-selected="activeTab === 'batch'"
+            title="Ctrl+3">
+            Batch
+        </button>
+        <button
+            type="button"
+            class="tab"
+            :class="{ 'active': activeTab === 'history' }"
+            @click="activeTab = 'history'"
+            role="tab"
+            :aria-selected="activeTab === 'history'"
+            title="Ctrl+4">
+            History
+        </button>
+        <button
+            type="button"
+            class="tab"
+            :class="{ 'active': activeTab === 'settings' }"
+            @click="activeTab = 'settings'"
+            role="tab"
+            :aria-selected="activeTab === 'settings'"
+            title="Ctrl+5">
+            Settings
+        </button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Validate Tab -->
+        <section x-show="activeTab === 'validate'" class="tab-panel" role="tabpanel">
+            <h2>Validate Definition</h2>
+            <p class="description">Check a definition against the Ralph checklist. No LLM required.</p>
+
+            <form @submit.prevent="validateDefinition()" class="form">
+                <div class="form-group">
+                    <label for="validate-definition">Definition</label>
+                    <textarea
+                        id="validate-definition"
+                        x-model="validate.definition"
+                        placeholder="Enter the definition to validate..."
+                        rows="4"
+                        required
+                        @keydown.ctrl.enter="validateDefinition()"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="validate-term">Term</label>
+                        <input
+                            type="text"
+                            id="validate-term"
+                            x-model="validate.term"
+                            placeholder="e.g., Event Time"
+                            required>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" x-model="validate.isIce">
+                            <span>Is ICE (Information Content Entity)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" :disabled="validate.loading">
+                        <span x-show="!validate.loading">Validate</span>
+                        <span x-show="validate.loading" class="loading-text">Validating...</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Validate Results -->
+            <div x-show="validate.results" class="results-section">
+                <div class="results-summary" :class="'status-' + validate.status">
+                    <span class="status-badge" x-text="validate.status?.toUpperCase()"></span>
+                    <span class="counts">
+                        <span class="passed" x-text="validate.passedCount + ' passed'"></span>
+                        <span class="separator">/</span>
+                        <span class="failed" x-text="validate.failedCount + ' failed'"></span>
+                    </span>
+                </div>
+
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Check</th>
+                            <th>Status</th>
+                            <th>Evidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="result in validate.results" :key="result.code">
+                            <tr :class="result.passed ? 'passed' : 'failed'">
+                                <td class="code" x-text="result.code"></td>
+                                <td x-text="result.name"></td>
+                                <td>
+                                    <span class="status-icon" x-text="result.passed ? '\u2713' : '\u2717'"></span>
+                                </td>
+                                <td class="evidence" x-text="result.evidence || '-'"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Error Display -->
+            <div x-show="validate.error" class="error-message" x-text="validate.error"></div>
+        </section>
+
+        <!-- Run Tab -->
+        <section x-show="activeTab === 'run'" class="tab-panel" role="tabpanel">
+            <h2>Run Ralph Loop</h2>
+            <p class="description">Generate or improve a definition using the LLM-powered refinement loop.</p>
+
+            <form @submit.prevent="runLoop()" class="form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="run-iri">IRI</label>
+                        <input
+                            type="text"
+                            id="run-iri"
+                            x-model="run.iri"
+                            placeholder="e.g., :EventTime"
+                            required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="run-label">Label</label>
+                        <input
+                            type="text"
+                            id="run-label"
+                            x-model="run.label"
+                            placeholder="e.g., Event Time"
+                            required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="run-parent">Parent Class</label>
+                        <input
+                            type="text"
+                            id="run-parent"
+                            x-model="run.parentClass"
+                            placeholder="e.g., cco:InformationContentEntity"
+                            required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="run-siblings">Sibling Classes (comma-separated)</label>
+                        <input
+                            type="text"
+                            id="run-siblings"
+                            x-model="run.siblings"
+                            placeholder="e.g., :StartTime, :EndTime">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="run-current">Current Definition (optional)</label>
+                    <textarea
+                        id="run-current"
+                        x-model="run.currentDefinition"
+                        placeholder="Existing definition to improve (leave empty to generate new)"
+                        rows="3"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" x-model="run.isIce">
+                            <span>Is ICE (Information Content Entity)</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="run-provider">Provider</label>
+                        <select id="run-provider" x-model="run.provider">
+                            <option value="claude">Claude</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="mock">Mock (Testing)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" :disabled="run.loading">
+                        <span x-show="!run.loading">Run Ralph Loop (Ctrl+Enter)</span>
+                        <span x-show="run.loading" class="loading-text">Running...</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Run Progress -->
+            <div x-show="run.loading" class="progress-section">
+                <div class="progress-header">
+                    <div class="progress-info">
+                        <span class="iteration-badge" x-show="run.currentIteration > 0">
+                            Iteration <span x-text="run.currentIteration"></span>/<span x-text="run.maxIterations"></span>
+                        </span>
+                        <span class="phase-badge" x-text="run.currentPhase"></span>
+                    </div>
+                    <button type="button" class="btn btn-small btn-cancel" @click="cancelRun()" title="Cancel (Esc)">
+                        Cancel
+                    </button>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" :style="'width: ' + run.progress + '%'"></div>
+                </div>
+                <p class="progress-text" x-text="run.progressText || 'Starting...'"></p>
+
+                <!-- Live Definition Preview -->
+                <div x-show="run.liveDefinition" class="live-definition">
+                    <h4>Current Definition:</h4>
+                    <blockquote x-text="run.liveDefinition"></blockquote>
+                </div>
+            </div>
+
+            <!-- Run Results -->
+            <div x-show="run.result" class="results-section">
+                <div class="results-header">
+                    <div class="results-summary" :class="'status-' + run.result?.status">
+                        <span class="status-badge" x-text="run.result?.status?.toUpperCase()"></span>
+                        <span class="meta">
+                            <span x-text="run.result?.total_iterations + ' iterations'"></span>
+                            <span class="separator">|</span>
+                            <span x-text="run.result?.duration_seconds?.toFixed(1) + 's'"></span>
+                            <span x-show="run.result?.converged" class="converged-badge">Converged</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="definition-result">
+                    <h3>Final Definition</h3>
+                    <blockquote x-text="run.result?.final_definition"></blockquote>
+                    <button type="button" class="btn btn-small" @click="copyToClipboard(run.result?.final_definition)">
+                        Copy
+                    </button>
+                </div>
+
+                <details class="iterations-details">
+                    <summary>Iteration History (<span x-text="run.result?.iterations?.length"></span>)</summary>
+                    <div class="iterations-list">
+                        <template x-for="iter in run.result?.iterations" :key="iter.iteration">
+                            <div class="iteration-item" :class="'status-' + iter.status">
+                                <div class="iteration-header">
+                                    <span class="iteration-num">Iteration <span x-text="iter.iteration"></span></span>
+                                    <span class="iteration-status" x-text="iter.status"></span>
+                                </div>
+                                <p class="iteration-def" x-text="iter.definition"></p>
+                                <div x-show="iter.failed_checks?.length" class="failed-checks">
+                                    Failed: <span x-text="iter.failed_checks?.join(', ')"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </details>
+
+                <details class="checks-details">
+                    <summary>Final Checks</summary>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Check</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="check in run.result?.final_checks" :key="check.code">
+                                <tr :class="check.passed ? 'passed' : 'failed'">
+                                    <td class="code" x-text="check.code"></td>
+                                    <td x-text="check.name"></td>
+                                    <td>
+                                        <span class="status-icon" x-text="check.passed ? '\u2713' : '\u2717'"></span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </details>
+            </div>
+
+            <!-- Error Display -->
+            <div x-show="run.error" class="error-message">
+                <p x-text="run.error"></p>
+                <button type="button" x-show="run.retryable" class="btn btn-small" @click="runLoop()">Retry</button>
+            </div>
+        </section>
+
+        <!-- Batch Tab -->
+        <section x-show="activeTab === 'batch'" class="tab-panel" role="tabpanel">
+            <h2>Batch Processing</h2>
+            <p class="description">Process multiple classes at once with real-time progress tracking.</p>
+
+            <!-- Input Form (shown when no job is running) -->
+            <div x-show="!batch.jobId">
+                <form @submit.prevent="startBatch()" class="form">
+                    <div class="form-group">
+                        <label for="batch-input">Classes (JSON format)</label>
+                        <textarea
+                            id="batch-input"
+                            x-model="batch.input"
+                            placeholder='[
+  {
+    "iri": ":EventTime",
+    "label": "Event Time",
+    "parent_class": "cco:InformationContentEntity",
+    "is_ice": true
+  },
+  {
+    "iri": ":StartTime",
+    "label": "Start Time",
+    "parent_class": "cco:InformationContentEntity",
+    "is_ice": true
+  }
+]'
+                            rows="12"
+                            required
+                            class="monospace"></textarea>
+                        <p class="help-text">Enter class definitions as a JSON array. Each object requires: iri, label, parent_class. Optional: sibling_classes, is_ice, current_definition.</p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="batch-provider">Provider</label>
+                            <select id="batch-provider" x-model="batch.provider">
+                                <option value="claude">Claude</option>
+                                <option value="openai">OpenAI</option>
+                                <option value="mock">Mock (Testing)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="batch-iterations">Max Iterations per Class</label>
+                            <input
+                                type="number"
+                                id="batch-iterations"
+                                x-model.number="batch.maxIterations"
+                                min="1"
+                                max="10">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" :disabled="batch.loading">
+                            <span x-show="!batch.loading">Start Batch Processing</span>
+                            <span x-show="batch.loading" class="loading-text">Starting...</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div x-show="batch.parseError" class="error-message" x-text="batch.parseError"></div>
+            </div>
+
+            <!-- Progress View (shown when job is running) -->
+            <div x-show="batch.jobId" class="batch-progress">
+                <div class="batch-header">
+                    <div class="batch-info">
+                        <span class="job-id">Job: <code x-text="batch.jobId"></code></span>
+                        <span class="batch-status-badge" :class="'status-' + batch.status" x-text="batch.status?.toUpperCase()"></span>
+                    </div>
+                    <button
+                        type="button"
+                        class="btn btn-small btn-cancel"
+                        @click="cancelBatch()"
+                        :disabled="batch.status !== 'running'"
+                        x-show="batch.status === 'running'"
+                        title="Cancel batch job">
+                        Cancel
+                    </button>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="batch-progress-bar">
+                    <div class="progress-bar">
+                        <div class="progress-fill" :style="'width: ' + batch.progressPercent + '%'"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span x-text="batch.completed + '/' + batch.total + ' classes'"></span>
+                        <span class="separator">|</span>
+                        <span class="passed" x-text="batch.passed + ' passed'"></span>
+                        <span class="separator">/</span>
+                        <span class="failed" x-text="batch.failed + ' failed'"></span>
+                        <span x-show="batch.duration" class="separator">|</span>
+                        <span x-show="batch.duration" x-text="batch.duration + 's'"></span>
+                    </div>
+                </div>
+
+                <!-- Currently Processing -->
+                <div x-show="batch.currentClass" class="batch-current">
+                    <span class="label">Processing:</span>
+                    <span class="class-iri" x-text="batch.currentClass"></span>
+                </div>
+
+                <!-- Results List -->
+                <div class="batch-results">
+                    <h3>Results</h3>
+                    <div class="batch-results-list">
+                        <template x-for="result in batch.results" :key="result.iri">
+                            <div class="batch-result-item" :class="'status-' + result.status">
+                                <div class="result-header">
+                                    <span class="status-icon" x-text="result.status === 'pass' ? '\u2713' : result.status === 'running' ? '\u25CF' : '\u2717'"></span>
+                                    <span class="result-label" x-text="result.label || result.iri"></span>
+                                    <span class="result-status" x-text="result.status"></span>
+                                </div>
+                                <div x-show="result.final_definition" class="result-definition">
+                                    <blockquote x-text="result.final_definition"></blockquote>
+                                </div>
+                                <div x-show="result.error" class="result-error" x-text="result.error"></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Actions after completion -->
+                <div x-show="batch.status === 'complete' || batch.status === 'cancelled'" class="batch-actions">
+                    <button type="button" class="btn btn-primary" @click="downloadBatchResults()">
+                        Download Results (ZIP)
+                    </button>
+                    <button type="button" class="btn" @click="resetBatch()">
+                        New Batch
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error Display -->
+            <div x-show="batch.error" class="error-message">
+                <p x-text="batch.error"></p>
+                <button type="button" class="btn btn-small" @click="resetBatch()">Try Again</button>
+            </div>
+        </section>
+
+        <!-- History Tab -->
+        <section x-show="activeTab === 'history'" class="tab-panel" role="tabpanel">
+            <h2>Run History</h2>
+            <p class="description">Browse past runs and their results. Stored locally in your browser.</p>
+
+            <!-- History Actions -->
+            <div class="history-actions">
+                <div class="history-stats">
+                    <span x-text="history.entries.length + ' runs'"></span>
+                </div>
+                <div class="history-buttons">
+                    <button type="button" class="btn btn-small" @click="exportHistory()" :disabled="history.entries.length === 0">
+                        Export
+                    </button>
+                    <button type="button" class="btn btn-small" @click="$refs.importFile.click()">
+                        Import
+                    </button>
+                    <input type="file" x-ref="importFile" accept=".json" @change="importHistory($event)" class="hidden" title="Import history JSON file">
+                    <button type="button" class="btn btn-small btn-danger" @click="confirmClearHistory()" :disabled="history.entries.length === 0">
+                        Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search/Filter -->
+            <div class="history-filter" x-show="history.entries.length > 0">
+                <input
+                    type="text"
+                    x-model="history.search"
+                    placeholder="Search by term or IRI..."
+                    class="history-search">
+                <select x-model="history.statusFilter" class="history-status-filter" title="Filter by status">
+                    <option value="">All statuses</option>
+                    <option value="pass">Passed</option>
+                    <option value="fail">Failed</option>
+                </select>
+            </div>
+
+            <!-- Empty State -->
+            <div x-show="history.entries.length === 0" class="placeholder-message">
+                <p>No runs saved yet.</p>
+                <p>Completed runs from the Run tab will appear here.</p>
+            </div>
+
+            <!-- History List -->
+            <div x-show="history.entries.length > 0" class="history-list">
+                <template x-for="entry in filteredHistory" :key="entry.id">
+                    <div class="history-item" :class="'status-' + entry.status">
+                        <div class="history-item-header">
+                            <div class="history-item-info">
+                                <span class="history-term" x-text="entry.label || entry.iri"></span>
+                                <span class="history-iri" x-text="entry.iri"></span>
+                            </div>
+                            <div class="history-item-meta">
+                                <span class="history-status" :class="'status-' + entry.status" x-text="entry.status"></span>
+                                <span class="history-date" x-text="formatDate(entry.timestamp)"></span>
+                            </div>
+                        </div>
+
+                        <div class="history-item-definition" x-show="entry.finalDefinition">
+                            <blockquote x-text="entry.finalDefinition"></blockquote>
+                        </div>
+
+                        <div class="history-item-stats">
+                            <span x-text="entry.iterations + ' iteration' + (entry.iterations !== 1 ? 's' : '')"></span>
+                            <span class="separator">|</span>
+                            <span x-text="entry.duration + 's'"></span>
+                            <span class="separator">|</span>
+                            <span x-text="entry.provider"></span>
+                        </div>
+
+                        <div class="history-item-actions">
+                            <button type="button" class="btn btn-small" @click="viewHistoryDetail(entry)">
+                                View Details
+                            </button>
+                            <button type="button" class="btn btn-small" @click="rerunFromHistory(entry)">
+                                Re-run
+                            </button>
+                            <button type="button" class="btn btn-small" @click="copyToClipboard(entry.finalDefinition)" :disabled="!entry.finalDefinition">
+                                Copy
+                            </button>
+                            <button type="button" class="btn btn-small btn-danger" @click="deleteHistoryEntry(entry.id)">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="filteredHistory.length === 0 && history.entries.length > 0" class="no-results">
+                    No results match your search.
+                </div>
+            </div>
+
+            <!-- Detail Modal -->
+            <div x-show="history.selectedEntry" class="modal-overlay" @click.self="history.selectedEntry = null">
+                <div class="modal history-detail-modal">
+                    <div class="modal-header">
+                        <h3 x-text="history.selectedEntry?.label || history.selectedEntry?.iri"></h3>
+                        <button type="button" class="modal-close" @click="history.selectedEntry = null">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="detail-section">
+                            <h4>Class Information</h4>
+                            <dl class="detail-list">
+                                <dt>IRI</dt>
+                                <dd x-text="history.selectedEntry?.iri"></dd>
+                                <dt>Parent Class</dt>
+                                <dd x-text="history.selectedEntry?.parentClass"></dd>
+                                <dt>Is ICE</dt>
+                                <dd x-text="history.selectedEntry?.isIce ? 'Yes' : 'No'"></dd>
+                            </dl>
+                        </div>
+
+                        <div class="detail-section">
+                            <h4>Result</h4>
+                            <dl class="detail-list">
+                                <dt>Status</dt>
+                                <dd><span class="history-status" :class="'status-' + history.selectedEntry?.status" x-text="history.selectedEntry?.status"></span></dd>
+                                <dt>Iterations</dt>
+                                <dd x-text="history.selectedEntry?.iterations"></dd>
+                                <dt>Duration</dt>
+                                <dd x-text="history.selectedEntry?.duration + 's'"></dd>
+                                <dt>Provider</dt>
+                                <dd x-text="history.selectedEntry?.provider"></dd>
+                                <dt>Date</dt>
+                                <dd x-text="history.selectedEntry ? new Date(history.selectedEntry.timestamp).toLocaleString() : ''"></dd>
+                            </dl>
+                        </div>
+
+                        <div class="detail-section" x-show="history.selectedEntry?.finalDefinition">
+                            <h4>Final Definition</h4>
+                            <blockquote class="detail-definition" x-text="history.selectedEntry?.finalDefinition"></blockquote>
+                            <button type="button" class="btn btn-small" @click="copyToClipboard(history.selectedEntry?.finalDefinition)">
+                                Copy Definition
+                            </button>
+                        </div>
+
+                        <div class="detail-section" x-show="history.selectedEntry?.iterationHistory?.length">
+                            <h4>Iteration History</h4>
+                            <div class="iteration-history">
+                                <template x-for="iter in history.selectedEntry?.iterationHistory || []" :key="iter.iteration">
+                                    <div class="iteration-history-item" :class="'status-' + iter.status">
+                                        <div class="iteration-history-header">
+                                            <span>Iteration <span x-text="iter.iteration"></span></span>
+                                            <span class="iteration-history-status" x-text="iter.status"></span>
+                                        </div>
+                                        <p class="iteration-history-def" x-text="iter.definition"></p>
+                                        <div x-show="iter.failedChecks?.length" class="iteration-history-checks">
+                                            Failed: <span x-text="iter.failedChecks?.join(', ')"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Tab -->
+        <section x-show="activeTab === 'settings'" class="tab-panel" role="tabpanel">
+            <h2>Settings</h2>
+            <p class="description">Configure API keys and preferences.</p>
+
+            <form @submit.prevent="saveSettings()" class="form">
+                <div class="settings-section">
+                    <h3>API Keys</h3>
+                    <p class="settings-note">Keys are stored locally in your browser and never sent to any server except the API provider.</p>
+
+                    <div class="form-group">
+                        <label for="settings-anthropic">Anthropic API Key</label>
+                        <div class="input-with-toggle">
+                            <input
+                                :type="settings.showAnthropicKey ? 'text' : 'password'"
+                                id="settings-anthropic"
+                                x-model="settings.anthropicKey"
+                                placeholder="sk-ant-...">
+                            <button
+                                type="button"
+                                class="toggle-visibility"
+                                @click="settings.showAnthropicKey = !settings.showAnthropicKey"
+                                :title="settings.showAnthropicKey ? 'Hide API key' : 'Show API key'"
+                                x-text="settings.showAnthropicKey ? 'Hide' : 'Show'">
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="settings-openai">OpenAI API Key</label>
+                        <div class="input-with-toggle">
+                            <input
+                                :type="settings.showOpenAIKey ? 'text' : 'password'"
+                                id="settings-openai"
+                                x-model="settings.openaiKey"
+                                placeholder="sk-...">
+                            <button
+                                type="button"
+                                class="toggle-visibility"
+                                @click="settings.showOpenAIKey = !settings.showOpenAIKey"
+                                :title="settings.showOpenAIKey ? 'Hide API key' : 'Show API key'"
+                                x-text="settings.showOpenAIKey ? 'Hide' : 'Show'">
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Preferences</h3>
+
+                    <div class="form-group">
+                        <label for="settings-provider">Default Provider</label>
+                        <select id="settings-provider" x-model="settings.defaultProvider">
+                            <option value="claude">Claude (Anthropic)</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="mock">Mock (Testing)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="settings-iterations">Max Iterations</label>
+                        <input
+                            type="number"
+                            id="settings-iterations"
+                            x-model.number="settings.maxIterations"
+                            min="1"
+                            max="10">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="settings-theme">Theme</label>
+                        <select id="settings-theme" x-model="theme" @change="saveTheme()">
+                            <option value="system">System Default</option>
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions settings-actions">
+                    <button type="submit" class="btn btn-primary">
+                        Save Settings
+                    </button>
+                    <button type="button" class="btn btn-danger" @click="confirmForgetKeys()">
+                        Forget All Keys
+                    </button>
+                </div>
+            </form>
+
+            <div x-show="settings.saved" class="success-message">
+                Settings saved successfully!
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>
+            OntoRalph - Definition Refinement for BFO/CCO Ontologies
+            <span class="separator">|</span>
+            <a href="/docs" target="_blank">API Docs</a>
+        </p>
+    </footer>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" x-show="toast.show" x-transition>
+        <div class="toast" :class="toast.type" x-text="toast.message"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/storage.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        function app() {
+            return {
+                // State
+                activeTab: 'validate',
+                serverVersion: '...',
+                theme: 'system',
+                prefersDark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+
+                // Toast
+                toast: {
+                    show: false,
+                    message: '',
+                    type: 'info'
+                },
+
+                // Validate state
+                validate: {
+                    definition: '',
+                    term: '',
+                    isIce: true,
+                    loading: false,
+                    results: null,
+                    status: null,
+                    passedCount: 0,
+                    failedCount: 0,
+                    error: null
+                },
+
+                // Run state
+                run: {
+                    iri: '',
+                    label: '',
+                    parentClass: '',
+                    siblings: '',
+                    currentDefinition: '',
+                    isIce: false,
+                    provider: 'claude',
+                    loading: false,
+                    progress: 0,
+                    progressText: '',
+                    result: null,
+                    error: null,
+                    retryable: false,
+                    // SSE streaming state
+                    currentIteration: 0,
+                    maxIterations: 5,
+                    currentPhase: '',
+                    liveDefinition: '',
+                    sseController: null
+                },
+
+                // Batch state
+                batch: {
+                    input: '',
+                    provider: 'claude',
+                    maxIterations: 5,
+                    loading: false,
+                    parseError: null,
+                    error: null,
+                    jobId: null,
+                    status: null,
+                    total: 0,
+                    completed: 0,
+                    passed: 0,
+                    failed: 0,
+                    currentClass: null,
+                    duration: null,
+                    results: [],
+                    sseController: null
+                },
+
+                // History state
+                history: {
+                    entries: [],
+                    search: '',
+                    statusFilter: '',
+                    selectedEntry: null,
+                    loading: false
+                },
+
+                // Settings state
+                settings: {
+                    anthropicKey: '',
+                    openaiKey: '',
+                    showAnthropicKey: false,
+                    showOpenAIKey: false,
+                    defaultProvider: 'claude',
+                    maxIterations: 5,
+                    saved: false
+                },
+
+                // Initialize
+                async init() {
+                    // Check server health
+                    try {
+                        const health = await api.health();
+                        this.serverVersion = health.version;
+                    } catch (e) {
+                        console.error('Health check failed:', e);
+                        this.serverVersion = 'offline';
+                    }
+
+                    // Load settings from storage
+                    await this.loadSettings();
+
+                    // Load history from storage
+                    await this.loadHistory();
+
+                    // Set up keyboard shortcuts
+                    this.setupKeyboardShortcuts();
+
+                    // Listen for system theme changes
+                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                        this.prefersDark = e.matches;
+                    });
+                },
+
+                setupKeyboardShortcuts() {
+                    document.addEventListener('keydown', (e) => {
+                        // Ctrl+1-5 for tab switching
+                        if (e.ctrlKey && e.key >= '1' && e.key <= '5') {
+                            e.preventDefault();
+                            const tabs = ['validate', 'run', 'batch', 'history', 'settings'];
+                            this.activeTab = tabs[parseInt(e.key) - 1];
+                        }
+
+                        // Escape to cancel running operation
+                        if (e.key === 'Escape' && this.run.loading) {
+                            e.preventDefault();
+                            this.cancelRun();
+                        }
+                    });
+                },
+
+                async loadSettings() {
+                    try {
+                        this.theme = await storage.getSetting('theme') || 'system';
+                        this.settings.defaultProvider = await storage.getSetting('defaultProvider') || 'claude';
+                        this.settings.maxIterations = await storage.getSetting('maxIterations') || 5;
+                        this.settings.anthropicKey = await storage.getApiKey('anthropic') || '';
+                        this.settings.openaiKey = await storage.getApiKey('openai') || '';
+                        this.run.provider = this.settings.defaultProvider;
+                    } catch (e) {
+                        console.error('Failed to load settings:', e);
+                    }
+                },
+
+                async saveSettings() {
+                    try {
+                        await storage.setSetting('theme', this.theme);
+                        await storage.setSetting('defaultProvider', this.settings.defaultProvider);
+                        await storage.setSetting('maxIterations', this.settings.maxIterations);
+                        await storage.setApiKey('anthropic', this.settings.anthropicKey);
+                        await storage.setApiKey('openai', this.settings.openaiKey);
+
+                        this.run.provider = this.settings.defaultProvider;
+                        this.settings.saved = true;
+                        setTimeout(() => this.settings.saved = false, 3000);
+
+                        this.showToast('Settings saved', 'success');
+                    } catch (e) {
+                        console.error('Failed to save settings:', e);
+                        this.showToast('Failed to save settings', 'error');
+                    }
+                },
+
+                saveTheme() {
+                    storage.setSetting('theme', this.theme);
+                },
+
+                async confirmForgetKeys() {
+                    if (confirm('Are you sure you want to delete all stored API keys? This cannot be undone.')) {
+                        await storage.clearAllData();
+                        this.settings.anthropicKey = '';
+                        this.settings.openaiKey = '';
+                        this.showToast('All data cleared', 'success');
+                    }
+                },
+
+                async validateDefinition() {
+                    this.validate.loading = true;
+                    this.validate.error = null;
+                    this.validate.results = null;
+
+                    try {
+                        const response = await api.validate(
+                            this.validate.definition,
+                            this.validate.term,
+                            this.validate.isIce
+                        );
+
+                        this.validate.results = response.results;
+                        this.validate.status = response.status;
+                        this.validate.passedCount = response.passed_count;
+                        this.validate.failedCount = response.failed_count;
+                    } catch (e) {
+                        this.validate.error = e.message || 'Validation failed';
+                    } finally {
+                        this.validate.loading = false;
+                    }
+                },
+
+                async runLoop() {
+                    this.run.loading = true;
+                    this.run.error = null;
+                    this.run.result = null;
+                    this.run.progress = 5;
+                    this.run.progressText = 'Initializing...';
+                    this.run.currentIteration = 0;
+                    this.run.currentPhase = 'Starting';
+                    this.run.liveDefinition = '';
+                    this.run.maxIterations = this.settings.maxIterations;
+
+                    // Get API key based on provider
+                    let apiKey = '';
+                    if (this.run.provider === 'claude') {
+                        apiKey = this.settings.anthropicKey;
+                    } else if (this.run.provider === 'openai') {
+                        apiKey = this.settings.openaiKey;
+                    } else {
+                        apiKey = 'mock-key';
+                    }
+
+                    if (!apiKey && this.run.provider !== 'mock') {
+                        this.run.error = `Please enter your ${this.run.provider === 'claude' ? 'Anthropic' : 'OpenAI'} API key in Settings.`;
+                        this.run.loading = false;
+                        return;
+                    }
+
+                    // Parse siblings
+                    const siblings = this.run.siblings
+                        ? this.run.siblings.split(',').map(s => s.trim()).filter(s => s)
+                        : [];
+
+                    try {
+                        // Use SSE streaming
+                        const controller = api.runStream(
+                            {
+                                iri: this.run.iri,
+                                label: this.run.label,
+                                parent_class: this.run.parentClass,
+                                sibling_classes: siblings,
+                                is_ice: this.run.isIce,
+                                current_definition: this.run.currentDefinition || null,
+                                provider: this.run.provider,
+                                api_key: apiKey,
+                                max_iterations: this.settings.maxIterations
+                            },
+                            (eventType, data) => this.handleSSEEvent(eventType, data)
+                        );
+
+                        this.run.sseController = controller;
+                        const result = await controller.promise;
+                        this.run.progress = 100;
+                        this.run.result = result;
+
+                        // Auto-save to history
+                        await this.saveToHistory(result);
+                    } catch (e) {
+                        if (e.code !== 'ABORTED') {
+                            this.run.error = e.message || 'Run failed';
+                            this.run.retryable = e.retryable || false;
+                        }
+                    } finally {
+                        this.run.loading = false;
+                        this.run.sseController = null;
+                        this.run.currentPhase = '';
+                    }
+                },
+
+                handleSSEEvent(eventType, data) {
+                    switch (eventType) {
+                        case 'iteration_start':
+                            this.run.currentIteration = data.iteration;
+                            this.run.maxIterations = data.max_iterations;
+                            this.run.currentPhase = 'Generating';
+                            this.run.progressText = `Iteration ${data.iteration}/${data.max_iterations}: Generating...`;
+                            this.run.progress = (data.iteration - 1) / data.max_iterations * 100 + 10;
+                            break;
+
+                        case 'generate':
+                            this.run.liveDefinition = data.definition;
+                            this.run.currentPhase = 'Critiquing';
+                            this.run.progressText = `Iteration ${this.run.currentIteration}: Critiquing...`;
+                            break;
+
+                        case 'critique':
+                            this.run.currentPhase = data.failed_count > 0 ? 'Refining' : 'Verifying';
+                            this.run.progressText = `Iteration ${this.run.currentIteration}: ${data.failed_count} issues found...`;
+                            break;
+
+                        case 'refine':
+                            this.run.liveDefinition = data.definition;
+                            this.run.currentPhase = 'Verifying';
+                            this.run.progressText = `Iteration ${this.run.currentIteration}: Verifying...`;
+                            break;
+
+                        case 'verify':
+                            this.run.progressText = `Iteration ${this.run.currentIteration}: ${data.status.toUpperCase()}`;
+                            break;
+
+                        case 'iteration_end':
+                            this.run.progress = data.iteration / this.run.maxIterations * 100;
+                            break;
+
+                        case 'complete':
+                            this.run.progressText = 'Complete!';
+                            break;
+
+                        case 'error':
+                            console.error('SSE error:', data);
+                            break;
+                    }
+                },
+
+                cancelRun() {
+                    if (this.run.sseController) {
+                        this.run.sseController.abort();
+                        this.run.progressText = 'Cancelled';
+                        this.showToast('Run cancelled', 'info');
+                    }
+                },
+
+                async startBatch() {
+                    this.batch.loading = true;
+                    this.batch.parseError = null;
+                    this.batch.error = null;
+
+                    // Parse input JSON
+                    let classes;
+                    try {
+                        classes = JSON.parse(this.batch.input);
+                        if (!Array.isArray(classes) || classes.length === 0) {
+                            throw new Error('Input must be a non-empty array of classes');
+                        }
+                    } catch (e) {
+                        this.batch.parseError = 'Invalid JSON: ' + e.message;
+                        this.batch.loading = false;
+                        return;
+                    }
+
+                    // Get API key based on provider
+                    let apiKey = '';
+                    if (this.batch.provider === 'claude') {
+                        apiKey = this.settings.anthropicKey;
+                    } else if (this.batch.provider === 'openai') {
+                        apiKey = this.settings.openaiKey;
+                    } else {
+                        apiKey = 'mock-key';
+                    }
+
+                    if (!apiKey && this.batch.provider !== 'mock') {
+                        this.batch.error = `Please enter your ${this.batch.provider === 'claude' ? 'Anthropic' : 'OpenAI'} API key in Settings.`;
+                        this.batch.loading = false;
+                        return;
+                    }
+
+                    try {
+                        // Create batch job
+                        const response = await api.createBatchJob({
+                            classes: classes,
+                            provider: this.batch.provider,
+                            api_key: apiKey,
+                            max_iterations: this.batch.maxIterations
+                        });
+
+                        this.batch.jobId = response.job_id;
+                        this.batch.status = response.status;
+                        this.batch.total = response.total_classes;
+                        this.batch.completed = 0;
+                        this.batch.passed = 0;
+                        this.batch.failed = 0;
+                        this.batch.results = classes.map(c => ({
+                            iri: c.iri,
+                            label: c.label,
+                            status: 'pending',
+                            final_definition: null,
+                            error: null
+                        }));
+
+                        // Start SSE streaming for progress
+                        this.streamBatchProgress(response.job_id, apiKey);
+
+                    } catch (e) {
+                        this.batch.error = e.message || 'Failed to start batch job';
+                    } finally {
+                        this.batch.loading = false;
+                    }
+                },
+
+                async streamBatchProgress(jobId, apiKey) {
+                    try {
+                        const controller = await api.streamBatchProgress(
+                            jobId,
+                            this.batch.provider,
+                            apiKey,
+                            (eventType, data) => this.handleBatchSSE(eventType, data)
+                        );
+                        this.batch.sseController = controller;
+                        await controller.promise;
+                    } catch (e) {
+                        if (e.code !== 'ABORTED') {
+                            console.error('Batch stream error:', e);
+                        }
+                    }
+                },
+
+                handleBatchSSE(eventType, data) {
+                    switch (eventType) {
+                        case 'status':
+                            this.batch.status = data.status;
+                            this.batch.completed = data.completed;
+                            this.batch.total = data.total;
+                            break;
+
+                        case 'progress':
+                            this.batch.completed = data.completed;
+                            this.batch.currentClass = data.current_class;
+                            break;
+
+                        case 'class_complete':
+                            // Update the result in the list
+                            const idx = this.batch.results.findIndex(r => r.iri === data.iri);
+                            if (idx !== -1) {
+                                this.batch.results[idx] = {
+                                    iri: data.iri,
+                                    label: data.label || data.iri,
+                                    status: data.status,
+                                    final_definition: data.final_definition,
+                                    error: null
+                                };
+                            }
+                            // Update counts
+                            if (data.status === 'pass') {
+                                this.batch.passed++;
+                            } else {
+                                this.batch.failed++;
+                            }
+                            this.batch.completed = data.index + 1;
+                            break;
+
+                        case 'job_complete':
+                            this.batch.status = data.status;
+                            this.batch.passed = data.passed;
+                            this.batch.failed = data.failed;
+                            this.batch.duration = data.duration_seconds?.toFixed(1);
+                            this.batch.currentClass = null;
+                            this.showToast(`Batch complete: ${data.passed} passed, ${data.failed} failed`, 'success');
+                            break;
+
+                        case 'error':
+                            this.batch.error = data.message;
+                            break;
+                    }
+                },
+
+                get progressPercent() {
+                    if (!this.batch.total) return 0;
+                    return Math.round((this.batch.completed / this.batch.total) * 100);
+                },
+
+                async cancelBatch() {
+                    if (!this.batch.jobId) return;
+
+                    try {
+                        await api.cancelBatchJob(this.batch.jobId);
+                        this.batch.status = 'cancelled';
+                        this.batch.currentClass = null;
+                        if (this.batch.sseController) {
+                            this.batch.sseController.abort();
+                        }
+                        this.showToast('Batch job cancelled', 'info');
+                    } catch (e) {
+                        this.showToast('Failed to cancel: ' + e.message, 'error');
+                    }
+                },
+
+                async downloadBatchResults() {
+                    if (!this.batch.jobId) return;
+
+                    try {
+                        const blob = await api.downloadBatchResults(this.batch.jobId);
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `ontoralph_batch_${this.batch.jobId}.zip`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        this.showToast('Download started', 'success');
+                    } catch (e) {
+                        this.showToast('Download failed: ' + e.message, 'error');
+                    }
+                },
+
+                resetBatch() {
+                    if (this.batch.sseController) {
+                        this.batch.sseController.abort();
+                    }
+                    this.batch.jobId = null;
+                    this.batch.status = null;
+                    this.batch.total = 0;
+                    this.batch.completed = 0;
+                    this.batch.passed = 0;
+                    this.batch.failed = 0;
+                    this.batch.currentClass = null;
+                    this.batch.duration = null;
+                    this.batch.results = [];
+                    this.batch.error = null;
+                    this.batch.sseController = null;
+                },
+
+                // History methods
+                async loadHistory() {
+                    try {
+                        this.history.entries = await storage.getHistory();
+                    } catch (e) {
+                        console.error('Failed to load history:', e);
+                        this.history.entries = [];
+                    }
+                },
+
+                async saveToHistory(result) {
+                    try {
+                        const entry = {
+                            iri: this.run.iri,
+                            label: this.run.label,
+                            parentClass: this.run.parentClass,
+                            isIce: this.run.isIce,
+                            provider: this.run.provider,
+                            status: result.status,
+                            finalDefinition: result.final_definition,
+                            iterations: result.total_iterations,
+                            duration: result.duration_seconds?.toFixed(1),
+                            converged: result.converged,
+                            iterationHistory: result.iterations?.map(iter => ({
+                                iteration: iter.iteration,
+                                definition: iter.definition,
+                                status: iter.status,
+                                failedChecks: iter.failed_checks
+                            }))
+                        };
+                        await storage.addHistoryEntry(entry);
+                        await this.loadHistory();
+                    } catch (e) {
+                        console.error('Failed to save to history:', e);
+                    }
+                },
+
+                get filteredHistory() {
+                    let filtered = this.history.entries;
+
+                    // Filter by status
+                    if (this.history.statusFilter) {
+                        filtered = filtered.filter(e => e.status === this.history.statusFilter);
+                    }
+
+                    // Filter by search term
+                    if (this.history.search) {
+                        const search = this.history.search.toLowerCase();
+                        filtered = filtered.filter(e =>
+                            (e.label || '').toLowerCase().includes(search) ||
+                            (e.iri || '').toLowerCase().includes(search) ||
+                            (e.finalDefinition || '').toLowerCase().includes(search)
+                        );
+                    }
+
+                    return filtered;
+                },
+
+                formatDate(timestamp) {
+                    if (!timestamp) return '';
+                    const date = new Date(timestamp);
+                    const now = new Date();
+                    const diff = now - date;
+
+                    // Less than 24 hours ago
+                    if (diff < 86400000) {
+                        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    }
+                    // Less than 7 days ago
+                    if (diff < 604800000) {
+                        return date.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+                    }
+                    // Older
+                    return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+                },
+
+                viewHistoryDetail(entry) {
+                    this.history.selectedEntry = entry;
+                },
+
+                async deleteHistoryEntry(id) {
+                    if (!confirm('Delete this history entry?')) return;
+
+                    try {
+                        await storage.deleteHistoryEntry(id);
+                        await this.loadHistory();
+                        this.showToast('Entry deleted', 'success');
+                    } catch (e) {
+                        this.showToast('Failed to delete: ' + e.message, 'error');
+                    }
+                },
+
+                async confirmClearHistory() {
+                    if (!confirm('Delete all history entries? This cannot be undone.')) return;
+
+                    try {
+                        await storage.clearHistory();
+                        this.history.entries = [];
+                        this.showToast('History cleared', 'success');
+                    } catch (e) {
+                        this.showToast('Failed to clear history: ' + e.message, 'error');
+                    }
+                },
+
+                rerunFromHistory(entry) {
+                    // Populate the Run form with the history entry data
+                    this.run.iri = entry.iri;
+                    this.run.label = entry.label;
+                    this.run.parentClass = entry.parentClass;
+                    this.run.isIce = entry.isIce;
+                    this.run.currentDefinition = '';
+                    this.run.result = null;
+                    this.run.error = null;
+
+                    // Switch to Run tab
+                    this.activeTab = 'run';
+                    this.showToast('Form populated from history', 'info');
+                },
+
+                async exportHistory() {
+                    try {
+                        const json = await storage.exportHistory();
+                        const blob = new Blob([json], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `ontoralph_history_${new Date().toISOString().slice(0, 10)}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        this.showToast('History exported', 'success');
+                    } catch (e) {
+                        this.showToast('Export failed: ' + e.message, 'error');
+                    }
+                },
+
+                async importHistory(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    try {
+                        const text = await file.text();
+                        const count = await storage.importHistory(text);
+                        await this.loadHistory();
+                        this.showToast(`Imported ${count} entries`, 'success');
+                    } catch (e) {
+                        this.showToast('Import failed: ' + e.message, 'error');
+                    }
+
+                    // Reset the file input
+                    event.target.value = '';
+                },
+
+                async copyToClipboard(text) {
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        this.showToast('Copied to clipboard', 'success');
+                    } catch (e) {
+                        this.showToast('Failed to copy', 'error');
+                    }
+                },
+
+                showToast(message, type = 'info') {
+                    this.toast.message = message;
+                    this.toast.type = type;
+                    this.toast.show = true;
+                    setTimeout(() => this.toast.show = false, 3000);
+                }
+            };
+        }
+    </script>
+</body>
+</html>

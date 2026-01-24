@@ -58,6 +58,13 @@ docs = [
     "mkdocs-material>=9.5.0",
     "mkdocstrings[python]>=0.24.0",
 ]
+web = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "sse-starlette>=2.0.0",
+    "python-multipart>=0.0.6",
+    "httpx>=0.27.0",
+]
 
 [project.scripts]
 ontoralph = "ontoralph.cli:main"
@@ -112,6 +119,10 @@ disallow_untyped_defs = true
 module = [
     "anthropic.*",
     "openai.*",
+    "fastapi.*",
+    "uvicorn.*",
+    "sse_starlette.*",
+    "starlette.*",
 ]
 ignore_missing_imports = true
 

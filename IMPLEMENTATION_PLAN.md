@@ -428,7 +428,13 @@ This plan outlines the phased implementation of OntoRalph, a tool for iterative 
 ## Phase 7: Batch Processing & Sibling Analysis
 
 **Duration**: Week 8
-**Goal**: Advanced batch features including cross-class analysis.
+**Goal**: Advanced batch features including cross-class analysis and ontology-aware output validation.
+
+### Reference Materials
+
+This phase incorporates patterns from `Recommended Tests/`:
+- `shaclValidator.js` - CCO/BFO pattern validation (Information Staircase, Role Pattern, etc.)
+- `sparql-queries/` - OWL/RDFS/SKOS namespace validation, punning detection, duplicate labels
 
 ### Deliverables
 
@@ -437,6 +443,7 @@ This plan outlines the phased implementation of OntoRalph, a tool for iterative 
 | Parallel processing | Process multiple classes concurrently |
 | Sibling exclusivity checker | Verify mutual exclusivity across siblings |
 | Dependency ordering | Process classes in correct order |
+| Output validation | Validate generated Turtle against BFO/CCO patterns |
 | Batch report | Consolidated results across all classes |
 
 ### Tasks
@@ -465,6 +472,58 @@ This plan outlines the phased implementation of OntoRalph, a tool for iterative 
   - Cross-class issues
 - [ ] **7.6** Add `--continue-on-error` flag for batch mode
 - [ ] **7.7** Implement batch resume (skip already-processed)
+- [ ] **7.8** Implement `TurtleValidator` for output validation (from shaclValidator.js patterns):
+  ```python
+  class TurtleValidator:
+      """Validates generated Turtle against BFO/CCO patterns."""
+
+      def validate_ice_pattern(self, graph: Graph) -> list[ValidationIssue]:
+          """Check Information Staircase: ICE → is_concretized_by → IBE."""
+
+      def validate_role_pattern(self, graph: Graph) -> list[ValidationIssue]:
+          """Check Role Pattern: Role must have bearer (BFO requirement)."""
+
+      def validate_designation_pattern(self, graph: Graph) -> list[ValidationIssue]:
+          """Check Designation: DesignativeICE must designate an entity."""
+
+      def validate_domain_range(self, graph: Graph) -> list[ValidationIssue]:
+          """Validate CCO predicate domain/range constraints."""
+  ```
+- [ ] **7.9** Implement batch integrity checks (from SPARQL queries):
+  ```python
+  class BatchIntegrityChecker:
+      """Cross-batch validation using SPARQL-inspired patterns."""
+
+      def check_duplicate_labels(self, graph: Graph) -> list[DuplicateLabelIssue]:
+          """Detect duplicate rdfs:label values across batch output."""
+
+      def check_punning(self, graph: Graph) -> list[PunningIssue]:
+          """Detect OWL punning (element is both individual and class)."""
+
+      def validate_namespace_terms(self, graph: Graph) -> list[NamespaceIssue]:
+          """Ensure OWL/RDFS/SKOS terms are valid (not misspelled)."""
+  ```
+- [ ] **7.10** Add `--validate-output` flag to enable BFO/CCO pattern validation
+
+### Output Validation Patterns (from shaclValidator.js)
+
+| Pattern | Severity | Description |
+|---------|----------|-------------|
+| ICE Concretization | Warning | ICE should have `is_concretized_by` relationship to IBE |
+| Role Bearer | Violation | Role MUST have bearer (BFO principle: roles cannot exist without bearers) |
+| Designation Link | Violation | DesignativeICE must designate an entity (a name that names nothing is not a name) |
+| Domain/Range | Warning | Validate CCO predicate constraints (e.g., `realizes` domain is Process) |
+| Vocabulary | Warning | Flag unrecognized CCO/BFO classes or predicates |
+
+### Batch Integrity Checks (from SPARQL queries)
+
+| Check | Source | Description |
+|-------|--------|-------------|
+| Duplicate Labels | `duplicate-rdfs-label.rq` | Same rdfs:label on multiple resources |
+| OWL Punning | `avoid-punning.rq` | Element is both owl:NamedIndividual and owl:Class |
+| OWL Terms | `check-for-undefined-owl-terms.sparql` | Misspelled or invalid OWL namespace terms |
+| RDFS Terms | `check-for-undefined-rdfs-terms.sparql` | Invalid RDFS terms (e.g., `rdfs:lable`) |
+| SKOS Terms | `check-for-undefined-skos-terms.sparql` | Invalid SKOS terms (e.g., `skos:defn`) |
 
 ### Acceptance Criteria
 
@@ -475,6 +534,11 @@ This plan outlines the phased implementation of OntoRalph, a tool for iterative 
 | AC7.3 | Classes processed in correct dependency order | Test with parent-child pairs |
 | AC7.4 | Partial batch failure doesn't lose completed results | Kill mid-batch, check output |
 | AC7.5 | Batch report shows aggregate statistics | Visual inspection |
+| AC7.6 | ICE pattern validation catches missing concretization | Test with ICE without IBE |
+| AC7.7 | Role pattern validation catches missing bearer | Test with Role without bearer |
+| AC7.8 | Duplicate label detection catches batch conflicts | Test with two classes with same label |
+| AC7.9 | Punning detection flags individuals-as-classes | Test with punned element |
+| AC7.10 | Namespace validation catches typos like `rdfs:lable` | Test with misspelled term |
 
 ---
 
