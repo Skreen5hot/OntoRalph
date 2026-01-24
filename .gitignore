@@ -149,8 +149,8 @@ Thumbs.db
 
 # Project-specific
 *.ttl.bak
-output/
-results/
+/output/
+/results/
 .ontoralph-cache/
 
 # API keys (never commit these!)
