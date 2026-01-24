@@ -140,7 +140,7 @@ class TestConfigFileLoading:
             config_path = f.name
 
         try:
-            with pytest.raises(Exception):  # Pydantic validation error
+            with pytest.raises(ValueError):  # Pydantic validation error
                 Settings.load_from_file(config_path)
         finally:
             os.unlink(config_path)

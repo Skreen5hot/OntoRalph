@@ -209,11 +209,11 @@ class ClaudeProvider(LLMProvider):
             except APITimeoutError as e:
                 last_error = LLMTimeoutError(f"Request timed out after {self.timeout}s: {e}")
                 # Don't retry timeouts
-                raise last_error
+                raise last_error from None
 
             except APIStatusError as e:
                 if e.status_code == 401:
-                    raise LLMAuthenticationError(f"Authentication failed: {e.message}")
+                    raise LLMAuthenticationError(f"Authentication failed: {e.message}") from None
                 elif e.status_code == 429:
                     retry_after = self._get_retry_after(e)
                     last_error = LLMRateLimitError(
@@ -223,28 +223,28 @@ class ClaudeProvider(LLMProvider):
                     if attempt < self.MAX_RETRIES - 1:
                         await asyncio.sleep(retry_after or self._get_backoff_delay(attempt))
                         continue
-                    raise last_error
+                    raise last_error from None
                 elif e.status_code >= 500:
                     # Server errors are retryable
                     last_error = LLMResponseError(f"Server error: {e.message}")
                     if attempt < self.MAX_RETRIES - 1:
                         await asyncio.sleep(self._get_backoff_delay(attempt))
                         continue
-                    raise last_error
+                    raise last_error from None
                 else:
-                    raise LLMResponseError(f"API error ({e.status_code}): {e.message}")
+                    raise LLMResponseError(f"API error ({e.status_code}): {e.message}") from None
 
             except APIConnectionError as e:
                 last_error = LLMResponseError(f"Connection error: {e}")
                 if attempt < self.MAX_RETRIES - 1:
                     await asyncio.sleep(self._get_backoff_delay(attempt))
                     continue
-                raise last_error
+                raise last_error from None
 
             except Exception as e:
                 if isinstance(e, (LLMAuthenticationError, LLMRateLimitError, LLMTimeoutError, LLMResponseError)):
                     raise
-                raise LLMResponseError(f"Unexpected error: {e}")
+                raise LLMResponseError(f"Unexpected error: {e}") from e
 
         # Should not reach here, but just in case
         if last_error:

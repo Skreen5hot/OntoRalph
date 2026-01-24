@@ -93,19 +93,19 @@ def create_progress_hooks(progress: Progress, task_id: Any, verbose: bool) -> Lo
     Returns:
         LoopHooks instance.
     """
-    def on_iteration_start(iteration: int, state: Any) -> None:
+    def on_iteration_start(iteration: int, _state: Any) -> None:
         progress.update(task_id, description=f"[cyan]Iteration {iteration}[/cyan]")
 
     def on_generate(definition: str) -> None:
         if verbose:
             console.print(f"  [dim]Generated:[/dim] {definition[:80]}...")
 
-    def on_critique(status: VerifyStatus, results: list) -> None:
+    def on_critique(_status: VerifyStatus, results: list) -> None:
         failed = [r for r in results if not r.passed]
         if verbose and failed:
             console.print(f"  [dim]Issues found:[/dim] {len(failed)}")
 
-    def on_verify(status: VerifyStatus, results: list) -> None:
+    def on_verify(status: VerifyStatus, _results: list) -> None:
         if status == VerifyStatus.PASS:
             progress.update(task_id, description="[green]Passed[/green]")
         elif status == VerifyStatus.FAIL:
@@ -494,7 +494,7 @@ def batch(
         with open(input_file, encoding="utf-8") as f:
             data = yaml.safe_load(f)
     except Exception as e:
-        raise click.ClickException(f"Failed to load YAML file: {e}")
+        raise click.ClickException(f"Failed to load YAML file: {e}") from e
 
     if "classes" not in data:
         raise click.ClickException("YAML file must contain a 'classes' key")
@@ -516,7 +516,7 @@ def batch(
                 current_definition=item.get("definition", item.get("current_definition")),
             ))
         except Exception as e:
-            raise click.ClickException(f"Invalid class at index {i}: {e}")
+            raise click.ClickException(f"Invalid class at index {i}: {e}") from e
 
     # Order by dependency if requested
     if order_by_dependency:
@@ -526,7 +526,7 @@ def batch(
             if not quiet:
                 console.print("[dim]Classes ordered by dependency[/dim]")
         except ValueError as e:
-            raise click.ClickException(f"Dependency ordering failed: {e}")
+            raise click.ClickException(f"Dependency ordering failed: {e}") from e
 
     if not quiet:
         console.print(f"[dim]Input file:[/dim] {input_file}")
@@ -647,20 +647,19 @@ def batch(
         integrity_checker = BatchIntegrityChecker()
         dup_labels, punning, ns_issues = integrity_checker.check_all(graph)
 
-        if not quiet:
-            if validation_issues or dup_labels or punning:
-                console.print()
-                console.print("[yellow]Output Validation Issues:[/yellow]")
+        if not quiet and (validation_issues or dup_labels or punning):
+            console.print()
+            console.print("[yellow]Output Validation Issues:[/yellow]")
 
-                for issue in validation_issues:
-                    severity_color = "red" if issue.severity.value == "violation" else "yellow"
-                    console.print(f"  [{severity_color}]{issue.severity.value.upper()}[/{severity_color}] {issue.message}")
+            for issue in validation_issues:
+                severity_color = "red" if issue.severity.value == "violation" else "yellow"
+                console.print(f"  [{severity_color}]{issue.severity.value.upper()}[/{severity_color}] {issue.message}")
 
-                for issue in dup_labels:
-                    console.print(f"  [yellow]WARNING[/yellow] {issue.message}")
+            for issue in dup_labels:
+                console.print(f"  [yellow]WARNING[/yellow] {issue.message}")
 
-                for issue in punning:
-                    console.print(f"  [red]VIOLATION[/red] {issue.message}")
+            for issue in punning:
+                console.print(f"  [red]VIOLATION[/red] {issue.message}")
 
     # Print summary
     if not quiet:

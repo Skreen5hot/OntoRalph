@@ -460,7 +460,7 @@ class LoggingHooks(LoopHooks):
             f"Loop started for {state.class_info.label}",
         )
 
-    def _on_iteration_start(self, iteration: int, state: LoopState) -> None:
+    def _on_iteration_start(self, iteration: int, _state: LoopState) -> None:
         self._logger.log(
             self._level,
             f"Iteration {iteration} started",
@@ -486,7 +486,7 @@ class LoggingHooks(LoopHooks):
             f"Refined: {definition[:100]}..." if len(definition) > 100 else f"Refined: {definition}",
         )
 
-    def _on_verify(self, status: VerifyStatus, results: list[CheckResult]) -> None:
+    def _on_verify(self, status: VerifyStatus, _results: list[CheckResult]) -> None:
         self._logger.log(
             self._level,
             f"Verify: {status.value}",

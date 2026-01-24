@@ -115,7 +115,7 @@ class TestDependencyOrdering:
 
         # Should return all classes (order doesn't matter for flat)
         assert len(ordered) == len(sample_classes)
-        assert set(c.iri for c in ordered) == set(c.iri for c in sample_classes)
+        assert {c.iri for c in ordered} == {c.iri for c in sample_classes}
 
     def test_detect_circular_dependency(self) -> None:
         """Test detection of circular dependencies."""

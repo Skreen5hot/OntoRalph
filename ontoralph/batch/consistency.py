@@ -118,7 +118,7 @@ class TerminologyAnalyzer:
         verbs: list[str] = []
         definition_lower = definition.lower()
 
-        for verb in self.VERB_NORMALIZATION.keys():
+        for verb in self.VERB_NORMALIZATION:
             if verb in definition_lower:
                 verbs.append(verb)
 
@@ -196,18 +196,21 @@ class PatternAnalyzer:
         # Check ICE definitions for proper pattern
         if class_infos:
             for iri, definition in definitions.items():
-                if iri in class_infos and class_infos[iri].is_ice:
-                    if not any(re.match(p, definition, re.IGNORECASE) for p in self.ICE_PATTERNS):
-                        issues.append(ConsistencyIssue(
-                            issue_type=ConsistencyIssueType.PATTERN,
-                            severity="warning",
-                            message=(
-                                f"ICE definition for {iri} doesn't follow "
-                                f"'An ICE that...' pattern"
-                            ),
-                            affected_classes=[iri],
-                            evidence=f"Definition starts with: {definition[:50]}...",
-                        ))
+                if (
+                    iri in class_infos
+                    and class_infos[iri].is_ice
+                    and not any(re.match(p, definition, re.IGNORECASE) for p in self.ICE_PATTERNS)
+                ):
+                    issues.append(ConsistencyIssue(
+                        issue_type=ConsistencyIssueType.PATTERN,
+                        severity="warning",
+                        message=(
+                            f"ICE definition for {iri} doesn't follow "
+                            f"'An ICE that...' pattern"
+                        ),
+                        affected_classes=[iri],
+                        evidence=f"Definition starts with: {definition[:50]}...",
+                    ))
 
         return issues
 

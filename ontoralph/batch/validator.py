@@ -280,7 +280,7 @@ class TurtleValidator:
         issues: list[ValidationIssue] = []
 
         # Check all predicates and objects for namespace issues
-        for s, p, o in graph:
+        for _s, p, o in graph:
             # Check predicate
             issues.extend(self._check_term(p))
 

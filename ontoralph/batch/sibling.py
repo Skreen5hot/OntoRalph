@@ -173,7 +173,7 @@ class SiblingExclusivityChecker:
 
             # Check each group
             all_issues: list[ExclusivityIssue] = []
-            for parent, group in by_parent.items():
+            for _parent, group in by_parent.items():
                 if len(group) < 2:
                     continue
 

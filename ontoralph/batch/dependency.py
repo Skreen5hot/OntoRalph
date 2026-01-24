@@ -203,7 +203,7 @@ class DependencyOrderer:
                     in_degree[class_info.iri] += 1
 
         # Find all classes with no internal dependencies
-        queue = [c.iri for c, deg in zip(classes, [in_degree[c.iri] for c in classes]) if deg == 0]
+        queue = [c.iri for c, deg in zip(classes, [in_degree[c.iri] for c in classes], strict=False) if deg == 0]
         ordered: list[str] = []
 
         while queue:

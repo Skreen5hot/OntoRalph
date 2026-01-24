@@ -248,7 +248,7 @@ class TestErrorHandling:
         def on_start(c: ClassInfo) -> None:
             starts.append(c.iri)
 
-        def on_complete(c: ClassInfo, r: LoopResult) -> None:
+        def on_complete(c: ClassInfo, _r: LoopResult) -> None:
             completes.append(c.iri)
 
         def on_progress(p: BatchProgress) -> None:

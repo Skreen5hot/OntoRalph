@@ -170,7 +170,7 @@ class MockProvider(LLMProvider):
             return f"A {parent_name} that is characterized by its role as a {class_info.label.lower()}."
 
     def _default_critique_response(
-        self, class_info: ClassInfo, definition: str
+        self, class_info: ClassInfo, _definition: str
     ) -> list[CheckResult]:
         """Generate a default critique response (all passing).
 
@@ -294,8 +294,8 @@ class MockProvider(LLMProvider):
     def _default_refine_response(
         self,
         class_info: ClassInfo,
-        definition: str,
-        issues: list[CheckResult],
+        _definition: str,
+        _issues: list[CheckResult],
     ) -> str:
         """Generate a default refined response.
 

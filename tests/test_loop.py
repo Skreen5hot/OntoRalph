@@ -191,7 +191,7 @@ class TestHooks:
 
         hooks = LoopHooks(
             on_generate=lambda d: definitions_generated.append(d),
-            on_verify=lambda s, r: verify_statuses.append(s),
+            on_verify=lambda s, _r: verify_statuses.append(s),
         )
 
         loop = RalphLoop(
