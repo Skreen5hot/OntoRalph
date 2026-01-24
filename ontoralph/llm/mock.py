@@ -25,8 +25,12 @@ class MockProvider(LLMProvider):
     def __init__(
         self,
         generate_response: str | Callable[[ClassInfo], str] | None = None,
-        critique_response: list[CheckResult] | Callable[[ClassInfo, str], list[CheckResult]] | None = None,
-        refine_response: str | Callable[[ClassInfo, str, list[CheckResult]], str] | None = None,
+        critique_response: list[CheckResult]
+        | Callable[[ClassInfo, str], list[CheckResult]]
+        | None = None,
+        refine_response: str
+        | Callable[[ClassInfo, str, list[CheckResult]], str]
+        | None = None,
         simulate_tokens: bool = True,
     ) -> None:
         """Initialize the mock provider.

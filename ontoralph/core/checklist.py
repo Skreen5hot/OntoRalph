@@ -566,9 +566,7 @@ class ChecklistEvaluator:
 
         return results
 
-    def _check_genus_structure(
-        self, definition: str, parent_class: str | None
-    ) -> bool:
+    def _check_genus_structure(self, definition: str, parent_class: str | None) -> bool:
         """Check if definition has a genus (parent class) reference."""
         definition_lower = definition.lower()
 
@@ -650,11 +648,11 @@ class ChecklistEvaluator:
         ]
 
         definition_lower = definition.lower()
-        return not any(
-            re.search(pattern, definition_lower) for pattern in non_standard
-        )
+        return not any(re.search(pattern, definition_lower) for pattern in non_standard)
 
-    def determine_status(self, results: list[CheckResult], is_ice: bool) -> VerifyStatus:
+    def determine_status(
+        self, results: list[CheckResult], is_ice: bool
+    ) -> VerifyStatus:
         """Determine the overall PASS/FAIL/ITERATE status.
 
         Args:

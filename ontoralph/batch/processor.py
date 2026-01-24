@@ -179,7 +179,9 @@ class BatchProcessor:
         """
         self.llm = llm
         self.config = config or BatchConfig()
-        self._state = BatchState(self.config.state_file) if self.config.enable_resume else None
+        self._state = (
+            BatchState(self.config.state_file) if self.config.enable_resume else None
+        )
 
         # Progress callbacks
         self._on_class_start: Callable[[ClassInfo], None] | None = None

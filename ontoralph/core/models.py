@@ -63,9 +63,7 @@ class CheckResult(BaseModel):
     code: str = Field(description="Check code, e.g., 'C1', 'I2', 'R3'")
     name: str = Field(description="Human-readable check name")
     passed: bool = Field(description="Whether the check passed")
-    evidence: str = Field(
-        description="Evidence supporting the pass/fail determination"
-    )
+    evidence: str = Field(description="Evidence supporting the pass/fail determination")
     severity: Severity = Field(description="Severity level of this check")
 
     model_config = {"extra": "forbid"}

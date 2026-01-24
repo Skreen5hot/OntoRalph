@@ -65,9 +65,7 @@ class HealthResponse(BaseModel):
 class SessionRequest(BaseModel):
     """Request to create a session token."""
 
-    provider: str = Field(
-        description="LLM provider: 'claude', 'openai', or 'mock'"
-    )
+    provider: str = Field(description="LLM provider: 'claude', 'openai', or 'mock'")
     api_key: str = Field(description="API key for the provider")
 
 
@@ -89,9 +87,7 @@ class ValidateRequest(BaseModel):
 
     definition: str = Field(description="The definition to validate")
     term: str = Field(description="The term being defined (for circularity check)")
-    is_ice: bool = Field(
-        default=True, description="Whether this is an ICE definition"
-    )
+    is_ice: bool = Field(default=True, description="Whether this is an ICE definition")
 
 
 class ValidateDefinitionItem(BaseModel):
@@ -119,7 +115,9 @@ class CheckResultResponse(BaseModel):
     code: str = Field(description="Check code, e.g., 'C1', 'I2', 'R3'")
     name: str = Field(description="Human-readable check name")
     passed: bool = Field(description="Whether the check passed")
-    severity: str = Field(description="Severity level: required, ice_required, quality, red_flag")
+    severity: str = Field(
+        description="Severity level: required, ice_required, quality, red_flag"
+    )
     evidence: str = Field(description="Evidence supporting the pass/fail determination")
 
 
@@ -206,12 +204,8 @@ class RunResponse(BaseModel):
     final_definition: str = Field(description="The final refined definition")
     total_iterations: int = Field(description="Number of iterations performed")
     duration_seconds: float = Field(description="Total time taken in seconds")
-    iterations: list[IterationSummary] = Field(
-        description="Summary of each iteration"
-    )
-    final_checks: list[CheckResultResponse] = Field(
-        description="Final check results"
-    )
+    iterations: list[IterationSummary] = Field(description="Summary of each iteration")
+    final_checks: list[CheckResultResponse] = Field(description="Final check results")
 
 
 # =============================================================================
@@ -267,9 +261,7 @@ class BatchClassResult(BaseModel):
     final_definition: str | None = Field(
         default=None, description="Final definition (if processed)"
     )
-    error: str | None = Field(
-        default=None, description="Error message (if failed)"
-    )
+    error: str | None = Field(default=None, description="Error message (if failed)")
     total_iterations: int | None = Field(
         default=None, description="Iterations performed"
     )

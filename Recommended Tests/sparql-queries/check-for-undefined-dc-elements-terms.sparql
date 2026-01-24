@@ -1,0 +1,38 @@
+PREFIX cco2: <https://www.commoncoreontologies.org/>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+
+SELECT ?resource ?label ?curatedIn ?value ?violation ?violationDescrption
+
+WHERE {
+   VALUES ?expectedResource { dc:contributor
+                              dc:coverage
+                              dc:creator
+                              dc:date
+                              dc:description
+                              dc:format
+                              dc:identifier
+                              dc:language
+                              dc:publisher
+                              dc:relation
+                              dc:rights
+                              dc:source
+                              dc:subject
+                              dc:title
+                              dc:type
+                              }
+  FILTER (STRSTARTS(STR(?resource), STR(dc:)) && ?resource != ?expectedResource)
+
+  OPTIONAL {?resource rdfs:label ?label }
+  OPTIONAL {?resource cco2:ont00001760 ?curatedIn }
+  
+  BIND ( ?expectedResource AS ?value )
+  BIND ( "Improper Dublin Core Elements Vocabulary" AS ?violation )
+  BIND ( CONCAT("The resource '", STR(?expectedResource), "' is not defined in Dublin Core Elemens namespace.") AS ?violationDescription )
+  
+}

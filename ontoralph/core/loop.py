@@ -176,7 +176,9 @@ class RalphLoop:
         result = LoopResult(
             class_info=class_info,
             final_definition=state.latest_definition or "",
-            status=final_iteration.verify_status if final_iteration else VerifyStatus.FAIL,
+            status=final_iteration.verify_status
+            if final_iteration
+            else VerifyStatus.FAIL,
             iterations=state.iterations,
             total_iterations=len(state.iterations),
             started_at=state.started_at,
@@ -321,8 +323,7 @@ class RalphLoop:
 
         # Check for red flags (auto-fail)
         red_flags = [
-            r for r in automated
-            if not r.passed and r.severity == Severity.RED_FLAG
+            r for r in automated if not r.passed and r.severity == Severity.RED_FLAG
         ]
 
         if red_flags and self.config.fail_fast_on_red_flags:
@@ -335,8 +336,7 @@ class RalphLoop:
 
         # Check for core failures
         core_failures = [
-            r for r in automated
-            if not r.passed and r.severity == Severity.REQUIRED
+            r for r in automated if not r.passed and r.severity == Severity.REQUIRED
         ]
 
         if core_failures and self.config.use_hybrid_checking:
@@ -344,7 +344,9 @@ class RalphLoop:
             # Still use automated results but could enhance with LLM later
             result.combined_results = automated
             result.skipped_llm = True
-            result.skip_reason = f"Core failures detected: {[r.code for r in core_failures]}"
+            result.skip_reason = (
+                f"Core failures detected: {[r.code for r in core_failures]}"
+            )
             logger.debug(f"Skipped LLM critique: {result.skip_reason}")
             return result
 
@@ -469,7 +471,9 @@ class LoggingHooks(LoopHooks):
     def _on_generate(self, definition: str) -> None:
         self._logger.log(
             self._level,
-            f"Generated: {definition[:100]}..." if len(definition) > 100 else f"Generated: {definition}",
+            f"Generated: {definition[:100]}..."
+            if len(definition) > 100
+            else f"Generated: {definition}",
         )
 
     def _on_critique(self, results: list[CheckResult]) -> None:
@@ -483,7 +487,9 @@ class LoggingHooks(LoopHooks):
     def _on_refine(self, definition: str) -> None:
         self._logger.log(
             self._level,
-            f"Refined: {definition[:100]}..." if len(definition) > 100 else f"Refined: {definition}",
+            f"Refined: {definition[:100]}..."
+            if len(definition) > 100
+            else f"Refined: {definition}",
         )
 
     def _on_verify(self, status: VerifyStatus, _results: list[CheckResult]) -> None:

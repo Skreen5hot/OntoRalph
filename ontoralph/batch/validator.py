@@ -69,31 +69,92 @@ class TurtleValidator:
 
     # Valid OWL namespace terms
     VALID_OWL_TERMS = {
-        "AllDifferent", "allValuesFrom", "AnnotationProperty", "backwardCompatibleWith",
-        "cardinality", "Class", "complementOf", "DataRange", "DatatypeProperty",
-        "DeprecatedClass", "DeprecatedProperty", "differentFrom", "disjointWith",
-        "distinctMembers", "equivalentClass", "equivalentProperty", "FunctionalProperty",
-        "hasValue", "imports", "incompatibleWith", "intersectionOf",
-        "InverseFunctionalProperty", "inverseOf", "maxCardinality", "minCardinality",
-        "Nothing", "ObjectProperty", "oneOf", "onProperty", "Ontology",
-        "OntologyProperty", "priorVersion", "Restriction", "sameAs", "someValuesFrom",
-        "SymmetricProperty", "Thing", "TransitiveProperty", "unionOf", "versionInfo",
+        "AllDifferent",
+        "allValuesFrom",
+        "AnnotationProperty",
+        "backwardCompatibleWith",
+        "cardinality",
+        "Class",
+        "complementOf",
+        "DataRange",
+        "DatatypeProperty",
+        "DeprecatedClass",
+        "DeprecatedProperty",
+        "differentFrom",
+        "disjointWith",
+        "distinctMembers",
+        "equivalentClass",
+        "equivalentProperty",
+        "FunctionalProperty",
+        "hasValue",
+        "imports",
+        "incompatibleWith",
+        "intersectionOf",
+        "InverseFunctionalProperty",
+        "inverseOf",
+        "maxCardinality",
+        "minCardinality",
+        "Nothing",
+        "ObjectProperty",
+        "oneOf",
+        "onProperty",
+        "Ontology",
+        "OntologyProperty",
+        "priorVersion",
+        "Restriction",
+        "sameAs",
+        "someValuesFrom",
+        "SymmetricProperty",
+        "Thing",
+        "TransitiveProperty",
+        "unionOf",
+        "versionInfo",
         "NamedIndividual",
     }
 
     # Valid RDFS namespace terms
     VALID_RDFS_TERMS = {
-        "Class", "comment", "Container", "ContainerMembershipProperty", "Datatype",
-        "domain", "isDefinedBy", "label", "Literal", "member", "range", "Resource",
-        "seeAlso", "subClassOf", "subPropertyOf",
+        "Class",
+        "comment",
+        "Container",
+        "ContainerMembershipProperty",
+        "Datatype",
+        "domain",
+        "isDefinedBy",
+        "label",
+        "Literal",
+        "member",
+        "range",
+        "Resource",
+        "seeAlso",
+        "subClassOf",
+        "subPropertyOf",
     }
 
     # Valid SKOS namespace terms
     VALID_SKOS_TERMS = {
-        "altLabel", "broader", "changeNote", "Collection", "Concept", "ConceptScheme",
-        "definition", "editorialNote", "example", "hasTopConcept", "hiddenLabel",
-        "historyNote", "inScheme", "member", "memberList", "narrower", "note",
-        "OrderedCollection", "prefLabel", "related", "scopeNote", "semanticRelation",
+        "altLabel",
+        "broader",
+        "changeNote",
+        "Collection",
+        "Concept",
+        "ConceptScheme",
+        "definition",
+        "editorialNote",
+        "example",
+        "hasTopConcept",
+        "hiddenLabel",
+        "historyNote",
+        "inScheme",
+        "member",
+        "memberList",
+        "narrower",
+        "note",
+        "OrderedCollection",
+        "prefLabel",
+        "related",
+        "scopeNote",
+        "semanticRelation",
     }
 
     def __init__(self, strict_mode: bool = False) -> None:
@@ -143,18 +204,20 @@ class TurtleValidator:
             concretizations = list(graph.objects(ice, CCO_IS_CONCRETIZED_BY))
 
             if not concretizations:
-                issues.append(ValidationIssue(
-                    pattern="Information Staircase",
-                    rule="ICE Concretization",
-                    severity=IssueSeverity.WARNING,
-                    subject=str(ice),
-                    message=f"ICE {self._short_iri(ice)} should have is_concretized_by relationship to IBE",
-                    explanation=(
-                        "While an ICE can exist abstractly (like a Law or Recipe), "
-                        "for practical modeling it should be concretized in a physical bearer."
-                    ),
-                    fix=f"Add: {self._short_iri(ice)} is_concretized_by [IBE]",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        pattern="Information Staircase",
+                        rule="ICE Concretization",
+                        severity=IssueSeverity.WARNING,
+                        subject=str(ice),
+                        message=f"ICE {self._short_iri(ice)} should have is_concretized_by relationship to IBE",
+                        explanation=(
+                            "While an ICE can exist abstractly (like a Law or Recipe), "
+                            "for practical modeling it should be concretized in a physical bearer."
+                        ),
+                        fix=f"Add: {self._short_iri(ice)} is_concretized_by [IBE]",
+                    )
+                )
 
         # Find all IBE instances
         for ibe in graph.subjects(RDF.type, CCO_IBE):
@@ -163,18 +226,20 @@ class TurtleValidator:
             inverse = list(graph.subjects(CCO_IS_CONCRETIZED_BY, ibe))
 
             if not concretizes and not inverse:
-                issues.append(ValidationIssue(
-                    pattern="Information Staircase",
-                    rule="IBE Concretization",
-                    severity=IssueSeverity.WARNING,
-                    subject=str(ibe),
-                    message=f"IBE {self._short_iri(ibe)} should concretize at least one ICE",
-                    explanation=(
-                        "An IBE without information is a 'blank slate' which is "
-                        "rarely the modeling intent."
-                    ),
-                    fix=f"Add: {self._short_iri(ibe)} concretizes [ICE]",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        pattern="Information Staircase",
+                        rule="IBE Concretization",
+                        severity=IssueSeverity.WARNING,
+                        subject=str(ibe),
+                        message=f"IBE {self._short_iri(ibe)} should concretize at least one ICE",
+                        explanation=(
+                            "An IBE without information is a 'blank slate' which is "
+                            "rarely the modeling intent."
+                        ),
+                        fix=f"Add: {self._short_iri(ibe)} concretizes [ICE]",
+                    )
+                )
 
         return issues
 
@@ -198,35 +263,39 @@ class TurtleValidator:
             bearers = list(graph.subjects(CCO_IS_BEARER_OF, role))
 
             if not bearers:
-                issues.append(ValidationIssue(
-                    pattern="Role Pattern",
-                    rule="Role Bearer",
-                    severity=IssueSeverity.VIOLATION,
-                    subject=str(role),
-                    message=f"Role {self._short_iri(role)} must be borne by at least one entity",
-                    explanation=(
-                        "In BFO, a Role (Disposition) cannot exist without a bearer - "
-                        "this is ontologically impossible."
-                    ),
-                    fix=f"Add: [Entity] is_bearer_of {self._short_iri(role)}",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        pattern="Role Pattern",
+                        rule="Role Bearer",
+                        severity=IssueSeverity.VIOLATION,
+                        subject=str(role),
+                        message=f"Role {self._short_iri(role)} must be borne by at least one entity",
+                        explanation=(
+                            "In BFO, a Role (Disposition) cannot exist without a bearer - "
+                            "this is ontologically impossible."
+                        ),
+                        fix=f"Add: [Entity] is_bearer_of {self._short_iri(role)}",
+                    )
+                )
 
             # Check for realization (OPTIONAL but recommended)
             realizations = list(graph.subjects(CCO_REALIZES, role))
 
             if not realizations:
-                issues.append(ValidationIssue(
-                    pattern="Role Pattern",
-                    rule="Role Realization",
-                    severity=IssueSeverity.WARNING,
-                    subject=str(role),
-                    message=f"Role {self._short_iri(role)} is not realized by any Process",
-                    explanation=(
-                        "While dispositions can remain dormant (per BFO), consider "
-                        "adding a realizes relationship if this role has been actualized."
-                    ),
-                    fix=f"Add: [Process] realizes {self._short_iri(role)}",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        pattern="Role Pattern",
+                        rule="Role Realization",
+                        severity=IssueSeverity.WARNING,
+                        subject=str(role),
+                        message=f"Role {self._short_iri(role)} is not realized by any Process",
+                        explanation=(
+                            "While dispositions can remain dormant (per BFO), consider "
+                            "adding a realizes relationship if this role has been actualized."
+                        ),
+                        fix=f"Add: [Process] realizes {self._short_iri(role)}",
+                    )
+                )
 
         return issues
 
@@ -251,18 +320,20 @@ class TurtleValidator:
             designated_by = list(graph.subjects(CCO_IS_DESIGNATED_BY, desig))
 
             if not designates and not designated_by:
-                issues.append(ValidationIssue(
-                    pattern="Designation Pattern",
-                    rule="Designation Link",
-                    severity=IssueSeverity.VIOLATION,
-                    subject=str(desig),
-                    message=f"DesignativeICE {self._short_iri(desig)} must designate an entity",
-                    explanation=(
-                        "A 'Name' that names nothing is not a Designative ICE in a "
-                        "realist sense - it's just an InformationContentEntity."
-                    ),
-                    fix=f"Add: {self._short_iri(desig)} designates [Entity]",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        pattern="Designation Pattern",
+                        rule="Designation Link",
+                        severity=IssueSeverity.VIOLATION,
+                        subject=str(desig),
+                        message=f"DesignativeICE {self._short_iri(desig)} must designate an entity",
+                        explanation=(
+                            "A 'Name' that names nothing is not a Designative ICE in a "
+                            "realist sense - it's just an InformationContentEntity."
+                        ),
+                        fix=f"Add: {self._short_iri(desig)} designates [Entity]",
+                    )
+                )
 
         return issues
 
@@ -306,52 +377,58 @@ class TurtleValidator:
         if str(OWL) in term_str:
             local = term_str.replace(str(OWL), "")
             if local and local not in self.VALID_OWL_TERMS:
-                issues.append(ValidationIssue(
-                    pattern="Namespace Validation",
-                    rule="Invalid OWL Term",
-                    severity=IssueSeverity.WARNING,
-                    subject=term_str,
-                    message=f"Term 'owl:{local}' is not a valid OWL vocabulary term",
-                    explanation=(
-                        f"'{local}' is not defined in the OWL namespace. "
-                        "This may be a typo or unsupported term."
-                    ),
-                    fix=f"Check spelling of 'owl:{local}'",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        pattern="Namespace Validation",
+                        rule="Invalid OWL Term",
+                        severity=IssueSeverity.WARNING,
+                        subject=term_str,
+                        message=f"Term 'owl:{local}' is not a valid OWL vocabulary term",
+                        explanation=(
+                            f"'{local}' is not defined in the OWL namespace. "
+                            "This may be a typo or unsupported term."
+                        ),
+                        fix=f"Check spelling of 'owl:{local}'",
+                    )
+                )
 
         # Check RDFS namespace
         if str(RDFS) in term_str:
             local = term_str.replace(str(RDFS), "")
             if local and local not in self.VALID_RDFS_TERMS:
-                issues.append(ValidationIssue(
-                    pattern="Namespace Validation",
-                    rule="Invalid RDFS Term",
-                    severity=IssueSeverity.WARNING,
-                    subject=term_str,
-                    message=f"Term 'rdfs:{local}' is not a valid RDFS vocabulary term",
-                    explanation=(
-                        f"'{local}' is not defined in the RDFS namespace. "
-                        "This may be a typo (e.g., 'lable' instead of 'label')."
-                    ),
-                    fix=f"Check spelling of 'rdfs:{local}'",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        pattern="Namespace Validation",
+                        rule="Invalid RDFS Term",
+                        severity=IssueSeverity.WARNING,
+                        subject=term_str,
+                        message=f"Term 'rdfs:{local}' is not a valid RDFS vocabulary term",
+                        explanation=(
+                            f"'{local}' is not defined in the RDFS namespace. "
+                            "This may be a typo (e.g., 'lable' instead of 'label')."
+                        ),
+                        fix=f"Check spelling of 'rdfs:{local}'",
+                    )
+                )
 
         # Check SKOS namespace
         if str(SKOS) in term_str:
             local = term_str.replace(str(SKOS), "")
             if local and local not in self.VALID_SKOS_TERMS:
-                issues.append(ValidationIssue(
-                    pattern="Namespace Validation",
-                    rule="Invalid SKOS Term",
-                    severity=IssueSeverity.WARNING,
-                    subject=term_str,
-                    message=f"Term 'skos:{local}' is not a valid SKOS vocabulary term",
-                    explanation=(
-                        f"'{local}' is not defined in the SKOS namespace. "
-                        "This may be a typo."
-                    ),
-                    fix=f"Check spelling of 'skos:{local}'",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        pattern="Namespace Validation",
+                        rule="Invalid SKOS Term",
+                        severity=IssueSeverity.WARNING,
+                        subject=term_str,
+                        message=f"Term 'skos:{local}' is not a valid SKOS vocabulary term",
+                        explanation=(
+                            f"'{local}' is not defined in the SKOS namespace. "
+                            "This may be a typo."
+                        ),
+                        fix=f"Check spelling of 'skos:{local}'",
+                    )
+                )
 
         return issues
 
@@ -414,7 +491,9 @@ class BatchIntegrityChecker:
     - check-for-undefined-*.sparql: Namespace validation
     """
 
-    def check_all(self, graph: Graph) -> tuple[
+    def check_all(
+        self, graph: Graph
+    ) -> tuple[
         list[DuplicateLabelIssue],
         list[PunningIssue],
         list[NamespaceIssue],
@@ -457,11 +536,13 @@ class BatchIntegrityChecker:
         # Find duplicates
         for label, resources in labels.items():
             if len(resources) > 1:
-                issues.append(DuplicateLabelIssue(
-                    label=label,
-                    resources=resources,
-                    message=f"Duplicate rdfs:label '{label}' found on {len(resources)} resources",
-                ))
+                issues.append(
+                    DuplicateLabelIssue(
+                        label=label,
+                        resources=resources,
+                        message=f"Duplicate rdfs:label '{label}' found on {len(resources)} resources",
+                    )
+                )
 
         return issues
 
@@ -490,14 +571,16 @@ class BatchIntegrityChecker:
             pun_types = individual_types & universal_types
 
             if pun_types:
-                issues.append(PunningIssue(
-                    resource=str(individual),
-                    types=[str(t) for t in pun_types | {OWL.NamedIndividual}],
-                    message=(
-                        f"Resource {str(individual)} is a pun: "
-                        f"typed as both individual and {', '.join(str(t).split('#')[-1] for t in pun_types)}"
-                    ),
-                ))
+                issues.append(
+                    PunningIssue(
+                        resource=str(individual),
+                        types=[str(t) for t in pun_types | {OWL.NamedIndividual}],
+                        message=(
+                            f"Resource {str(individual)} is a pun: "
+                            f"typed as both individual and {', '.join(str(t).split('#')[-1] for t in pun_types)}"
+                        ),
+                    )
+                )
 
         return issues
 

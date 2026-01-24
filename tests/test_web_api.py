@@ -412,9 +412,7 @@ class TestRunStreamEndpoint:
         # Should have at least iteration_start and complete events
         assert "event:" in content or "data:" in content
 
-    def test_stream_invalid_token_returns_error_event(
-        self, client: TestClient
-    ) -> None:
+    def test_stream_invalid_token_returns_error_event(self, client: TestClient) -> None:
         """Test that invalid token returns an error SSE event."""
         response = client.get(
             "/api/run/stream",

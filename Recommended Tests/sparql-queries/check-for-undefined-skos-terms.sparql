@@ -1,0 +1,54 @@
+PREFIX cco2: <https://www.commoncoreontologies.org/>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+
+SELECT ?resource ?label ?curatedIn ?value ?violation ?violationDescrption
+
+WHERE {
+   VALUES ?expectedResource { skos:altLabel
+                              skos:altSymbol
+                              skos:broader
+                              skos:changeNote
+                              skos:CollectableProperty
+                              skos:Collection
+                              skos:Concept
+                              skos:ConceptScheme
+                              skos:definition
+                              skos:editorialNote
+                              skos:example
+                              skos:hasTopConcept
+                              skos:hiddenLabel
+                              skos:historyNote
+                              skos:inScheme
+                              skos:isPrimarySubjectOf
+                              skos:isSubjectOf
+                              skos:member
+                              skos:memberList
+                              skos:narrower
+                              skos:note
+                              skos:OrderedCollection
+                              skos:prefLabel
+                              skos:prefSymbol
+                              skos:primarySubject
+                              skos:related
+                              skos:scopeNote
+                              skos:semanticRelation
+                              skos:subject
+                              skos:subjectIndicator
+                              skos:symbol
+                              }
+  FILTER (STRSTARTS(STR(?resource), STR(skos:)) && ?resource != ?expectedResource)
+
+  OPTIONAL {?resource rdfs:label ?label }
+  OPTIONAL {?resource cco2:ont00001760 ?curatedIn }
+  
+  BIND ( ?expectedResource AS ?value )
+  BIND ( "Improper SKOS Vocabulary" AS ?violation )
+  BIND ( CONCAT("The resource '", STR(?expectedResource), "' is not defined in SKOS namespace.") AS ?violationDescription )
+  
+}

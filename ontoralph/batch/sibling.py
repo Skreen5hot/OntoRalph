@@ -47,8 +47,25 @@ class SiblingExclusivityChecker:
 
     # Common differentiating words to ignore in similarity checks
     STOP_WORDS = {
-        "a", "an", "the", "is", "are", "that", "which", "of", "in", "to",
-        "for", "and", "or", "as", "by", "with", "from", "at", "on",
+        "a",
+        "an",
+        "the",
+        "is",
+        "are",
+        "that",
+        "which",
+        "of",
+        "in",
+        "to",
+        "for",
+        "and",
+        "or",
+        "as",
+        "by",
+        "with",
+        "from",
+        "at",
+        "on",
     }
 
     # Threshold for high similarity warning
@@ -90,54 +107,60 @@ class SiblingExclusivityChecker:
 
         # Compare each pair of definitions
         for i, iri1 in enumerate(iris):
-            for iri2 in iris[i + 1:]:
+            for iri2 in iris[i + 1 :]:
                 def1 = definitions[iri1]
                 def2 = definitions[iri2]
 
                 # Check for identical definitions
                 if def1 == def2:
-                    issues.append(ExclusivityIssue(
-                        class1_iri=iri1,
-                        class2_iri=iri2,
-                        overlap_type=OverlapType.IDENTICAL,
-                        severity="error",
-                        message=f"Classes {iri1} and {iri2} have identical definitions",
-                        evidence=f"Both: {def1[:100]}...",
-                        similarity_score=1.0,
-                    ))
+                    issues.append(
+                        ExclusivityIssue(
+                            class1_iri=iri1,
+                            class2_iri=iri2,
+                            overlap_type=OverlapType.IDENTICAL,
+                            severity="error",
+                            message=f"Classes {iri1} and {iri2} have identical definitions",
+                            evidence=f"Both: {def1[:100]}...",
+                            similarity_score=1.0,
+                        )
+                    )
                     continue
 
                 # Check overall similarity
                 similarity = self._calculate_similarity(def1, def2)
                 if similarity >= self.similarity_threshold:
-                    issues.append(ExclusivityIssue(
-                        class1_iri=iri1,
-                        class2_iri=iri2,
-                        overlap_type=OverlapType.HIGH_SIMILARITY,
-                        severity="warning",
-                        message=(
-                            f"Classes {iri1} and {iri2} have highly similar "
-                            f"definitions ({similarity:.0%} similar)"
-                        ),
-                        evidence=f"Definition 1: {def1[:80]}...\nDefinition 2: {def2[:80]}...",
-                        similarity_score=similarity,
-                    ))
+                    issues.append(
+                        ExclusivityIssue(
+                            class1_iri=iri1,
+                            class2_iri=iri2,
+                            overlap_type=OverlapType.HIGH_SIMILARITY,
+                            severity="warning",
+                            message=(
+                                f"Classes {iri1} and {iri2} have highly similar "
+                                f"definitions ({similarity:.0%} similar)"
+                            ),
+                            evidence=f"Definition 1: {def1[:80]}...\nDefinition 2: {def2[:80]}...",
+                            similarity_score=similarity,
+                        )
+                    )
 
                 # Check for shared differentia
                 diff_overlap = self._check_differentia_overlap(def1, def2)
                 if diff_overlap and diff_overlap >= self.SHARED_DIFFERENTIA_THRESHOLD:
-                    issues.append(ExclusivityIssue(
-                        class1_iri=iri1,
-                        class2_iri=iri2,
-                        overlap_type=OverlapType.SHARED_DIFFERENTIA,
-                        severity="warning",
-                        message=(
-                            f"Classes {iri1} and {iri2} may share similar "
-                            f"differentiating properties"
-                        ),
-                        evidence=f"Differentia overlap: {diff_overlap:.0%}",
-                        similarity_score=diff_overlap,
-                    ))
+                    issues.append(
+                        ExclusivityIssue(
+                            class1_iri=iri1,
+                            class2_iri=iri2,
+                            overlap_type=OverlapType.SHARED_DIFFERENTIA,
+                            severity="warning",
+                            message=(
+                                f"Classes {iri1} and {iri2} may share similar "
+                                f"differentiating properties"
+                            ),
+                            evidence=f"Differentia overlap: {diff_overlap:.0%}",
+                            similarity_score=diff_overlap,
+                        )
+                    )
 
                 # Check for term overlap (using sibling's label)
                 if self.check_term_overlap and class_infos:
@@ -305,31 +328,31 @@ class SiblingExclusivityChecker:
 
         # Check if def1 mentions label2
         if self._contains_term(def1, label2):
-            issues.append(ExclusivityIssue(
-                class1_iri=iri1,
-                class2_iri=iri2,
-                overlap_type=OverlapType.TERM_OVERLAP,
-                severity="info",
-                message=(
-                    f"Definition of {iri1} mentions sibling term '{label2}'"
-                ),
-                evidence=f"'{label2}' found in definition of {iri1}",
-                similarity_score=0.0,
-            ))
+            issues.append(
+                ExclusivityIssue(
+                    class1_iri=iri1,
+                    class2_iri=iri2,
+                    overlap_type=OverlapType.TERM_OVERLAP,
+                    severity="info",
+                    message=(f"Definition of {iri1} mentions sibling term '{label2}'"),
+                    evidence=f"'{label2}' found in definition of {iri1}",
+                    similarity_score=0.0,
+                )
+            )
 
         # Check if def2 mentions label1
         if self._contains_term(def2, label1):
-            issues.append(ExclusivityIssue(
-                class1_iri=iri2,
-                class2_iri=iri1,
-                overlap_type=OverlapType.TERM_OVERLAP,
-                severity="info",
-                message=(
-                    f"Definition of {iri2} mentions sibling term '{label1}'"
-                ),
-                evidence=f"'{label1}' found in definition of {iri2}",
-                similarity_score=0.0,
-            ))
+            issues.append(
+                ExclusivityIssue(
+                    class1_iri=iri2,
+                    class2_iri=iri1,
+                    overlap_type=OverlapType.TERM_OVERLAP,
+                    severity="info",
+                    message=(f"Definition of {iri2} mentions sibling term '{label1}'"),
+                    evidence=f"'{label1}' found in definition of {iri2}",
+                    similarity_score=0.0,
+                )
+            )
 
         return issues
 

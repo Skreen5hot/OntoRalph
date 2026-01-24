@@ -93,7 +93,9 @@ class OpenAIProvider(LLMProvider):
 
         self.model = model or self.DEFAULT_MODEL
         self.max_tokens = max_tokens or self.DEFAULT_MAX_TOKENS
-        self.temperature = temperature if temperature is not None else self.DEFAULT_TEMPERATURE
+        self.temperature = (
+            temperature if temperature is not None else self.DEFAULT_TEMPERATURE
+        )
         self.timeout = timeout or self.DEFAULT_TIMEOUT
 
         self._client = openai.AsyncOpenAI(
@@ -206,13 +208,17 @@ class OpenAIProvider(LLMProvider):
                 return message.content
 
             except APITimeoutError as e:
-                last_error = LLMTimeoutError(f"Request timed out after {self.timeout}s: {e}")
+                last_error = LLMTimeoutError(
+                    f"Request timed out after {self.timeout}s: {e}"
+                )
                 # Don't retry timeouts
                 raise last_error from None
 
             except APIStatusError as e:
                 if e.status_code == 401:
-                    raise LLMAuthenticationError(f"Authentication failed: {e.message}") from None
+                    raise LLMAuthenticationError(
+                        f"Authentication failed: {e.message}"
+                    ) from None
                 elif e.status_code == 429:
                     retry_after = self._get_retry_after(e)
                     last_error = LLMRateLimitError(
@@ -220,7 +226,9 @@ class OpenAIProvider(LLMProvider):
                         retry_after=retry_after,
                     )
                     if attempt < self.MAX_RETRIES - 1:
-                        await asyncio.sleep(retry_after or self._get_backoff_delay(attempt))
+                        await asyncio.sleep(
+                            retry_after or self._get_backoff_delay(attempt)
+                        )
                         continue
                     raise last_error from None
                 elif e.status_code >= 500:
@@ -231,7 +239,9 @@ class OpenAIProvider(LLMProvider):
                         continue
                     raise last_error from None
                 else:
-                    raise LLMResponseError(f"API error ({e.status_code}): {e.message}") from None
+                    raise LLMResponseError(
+                        f"API error ({e.status_code}): {e.message}"
+                    ) from None
 
             except APIConnectionError as e:
                 last_error = LLMResponseError(f"Connection error: {e}")
@@ -241,7 +251,15 @@ class OpenAIProvider(LLMProvider):
                 raise last_error from None
 
             except Exception as e:
-                if isinstance(e, (LLMAuthenticationError, LLMRateLimitError, LLMTimeoutError, LLMResponseError)):
+                if isinstance(
+                    e,
+                    (
+                        LLMAuthenticationError,
+                        LLMRateLimitError,
+                        LLMTimeoutError,
+                        LLMResponseError,
+                    ),
+                ):
                     raise
                 raise LLMResponseError(f"Unexpected error: {e}") from e
 

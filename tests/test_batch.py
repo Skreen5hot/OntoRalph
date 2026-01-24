@@ -100,7 +100,9 @@ def mock_provider() -> MockProvider:
 class TestDependencyOrdering:
     """Tests for dependency ordering."""
 
-    def test_order_simple_hierarchy(self, hierarchical_classes: list[ClassInfo]) -> None:
+    def test_order_simple_hierarchy(
+        self, hierarchical_classes: list[ClassInfo]
+    ) -> None:
         """Test ordering of simple parent-child hierarchy (AC7.3)."""
         ordered = order_by_dependency(hierarchical_classes)
 
@@ -141,12 +143,14 @@ class TestDependencyOrdering:
     def test_dependency_graph_validation(self) -> None:
         """Test dependency graph validation."""
         graph = DependencyGraph()
-        graph.add_class(ClassInfo(
-            iri=":SelfRef",
-            label="Self Reference",
-            parent_class=":SelfRef",  # Self-reference
-            is_ice=True,
-        ))
+        graph.add_class(
+            ClassInfo(
+                iri=":SelfRef",
+                label="Self Reference",
+                parent_class=":SelfRef",  # Self-reference
+                is_ice=True,
+            )
+        )
 
         issues = graph.validate()
         assert len(issues) > 0
@@ -203,8 +207,18 @@ class TestSiblingExclusivity:
             ":NounPhrase": "An ICE that is distinct from verb phrase structures.",
         }
         class_infos = {
-            ":VerbPhrase": ClassInfo(iri=":VerbPhrase", label="Verb Phrase", parent_class="owl:Thing", is_ice=True),
-            ":NounPhrase": ClassInfo(iri=":NounPhrase", label="Noun Phrase", parent_class="owl:Thing", is_ice=True),
+            ":VerbPhrase": ClassInfo(
+                iri=":VerbPhrase",
+                label="Verb Phrase",
+                parent_class="owl:Thing",
+                is_ice=True,
+            ),
+            ":NounPhrase": ClassInfo(
+                iri=":NounPhrase",
+                label="Noun Phrase",
+                parent_class="owl:Thing",
+                is_ice=True,
+            ),
         }
 
         checker = SiblingExclusivityChecker(check_term_overlap=True)
@@ -249,7 +263,9 @@ class TestCrossClassConsistency:
             ":Class1": "Something that is an entity.",  # Wrong pattern for ICE
         }
         class_infos = {
-            ":Class1": ClassInfo(iri=":Class1", label="Class1", parent_class="owl:Thing", is_ice=True),
+            ":Class1": ClassInfo(
+                iri=":Class1", label="Class1", parent_class="owl:Thing", is_ice=True
+            ),
         }
 
         checker = CrossClassConsistencyChecker()
@@ -492,7 +508,9 @@ class TestBatchResultProperties:
         # Create mock results
         now = datetime.now()
         passed_result = LoopResult(
-            class_info=ClassInfo(iri=":Test1", label="Test1", parent_class="owl:Thing", is_ice=False),
+            class_info=ClassInfo(
+                iri=":Test1", label="Test1", parent_class="owl:Thing", is_ice=False
+            ),
             final_definition="A test definition.",
             status=VerifyStatus.PASS,
             total_iterations=1,
@@ -501,7 +519,9 @@ class TestBatchResultProperties:
             completed_at=now,
         )
         failed_result = LoopResult(
-            class_info=ClassInfo(iri=":Test2", label="Test2", parent_class="owl:Thing", is_ice=False),
+            class_info=ClassInfo(
+                iri=":Test2", label="Test2", parent_class="owl:Thing", is_ice=False
+            ),
             final_definition="A failed definition.",
             status=VerifyStatus.FAIL,
             total_iterations=5,

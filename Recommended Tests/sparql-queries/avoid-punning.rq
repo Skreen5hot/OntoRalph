@@ -1,0 +1,26 @@
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX cco: <http://www.ontologyrepository.com/CommonCoreOntologies/>
+PREFIX dacts: <https://github.com/jonathanvajda/cco-d-acts/>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX xml: <http://www.w3.org/XML/1998/namespace>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT DISTINCT ?resource ?label ?curatedIn ?value ?violation
+WHERE {
+    VALUES ?punType { owl:Class owl:ObjectProperty owl:DatatypeProperty }
+    ?resource a owl:NamedIndividual , ?punType .
+
+    OPTIONAL {?resource rdfs:label ?label }
+    OPTIONAL {?resource cco:is_curated_in_ontology ?curatedIn }
+
+    BIND("Ontology element is a pun: it is treated as an individual and as a universal." as ?violation)
+    BIND(?punType as ?value)
+
+    }
+    GROUP BY ?resource ?label ?curatedIn ?value ?violation

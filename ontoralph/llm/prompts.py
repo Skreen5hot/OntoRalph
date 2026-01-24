@@ -49,7 +49,7 @@ def format_generate_prompt(class_info: ClassInfo) -> str:
     if class_info.sibling_classes:
         siblings_text = f"""
 Sibling classes (the definition should distinguish from these):
-{', '.join(class_info.sibling_classes)}
+{", ".join(class_info.sibling_classes)}
 """
 
     current_def_text = ""
@@ -352,8 +352,7 @@ class PromptTemplateManager:
         """
         if "refine" in self._templates:
             issues_text = "\n".join(
-                f"- {issue.code} ({issue.name}): {issue.evidence}"
-                for issue in issues
+                f"- {issue.code} ({issue.name}): {issue.evidence}" for issue in issues
             )
             return self._apply_template(
                 self._templates["refine"],
@@ -386,7 +385,9 @@ class PromptTemplateManager:
             "label": class_info.label,
             "parent_class": class_info.parent_class,
             "is_ice": str(class_info.is_ice),
-            "siblings": ", ".join(class_info.sibling_classes) if class_info.sibling_classes else "",
+            "siblings": ", ".join(class_info.sibling_classes)
+            if class_info.sibling_classes
+            else "",
             "current_definition": class_info.current_definition or "",
             "definition": definition,
             "issues": issues,

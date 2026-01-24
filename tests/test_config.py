@@ -189,7 +189,10 @@ class TestConfigPrecedence:
 
     def test_project_config_overrides_user_config(self) -> None:
         """Test project config overrides user config."""
-        with tempfile.TemporaryDirectory() as project_dir, tempfile.TemporaryDirectory() as user_dir:
+        with (
+            tempfile.TemporaryDirectory() as project_dir,
+            tempfile.TemporaryDirectory() as user_dir,
+        ):
             # Create user config
             user_config = Path(user_dir) / ".ontoralph.yaml"
             user_config.write_text(
@@ -202,7 +205,9 @@ class TestConfigPrecedence:
                 yaml.dump({"loop": {"max_iterations": 4}}), encoding="utf-8"
             )
 
-            loader = ConfigLoader(project_dir=Path(project_dir), user_dir=Path(user_dir))
+            loader = ConfigLoader(
+                project_dir=Path(project_dir), user_dir=Path(user_dir)
+            )
             settings = loader.load()
 
             # Project should win over user
@@ -492,9 +497,7 @@ class TestIntegration:
             assert settings.output.format == OutputFormat.TURTLE
 
             # Test custom rule evaluation
-            evaluator = ChecklistEvaluator(
-                custom_rules=settings.checklist.custom_rules
-            )
+            evaluator = ChecklistEvaluator(custom_rules=settings.checklist.custom_rules)
             results = evaluator.evaluate(
                 definition="An ICE that uses XML and JSON formats",
                 term="Test",

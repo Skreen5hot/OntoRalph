@@ -40,7 +40,9 @@ def print_banner() -> None:
     banner.append("OntoRalph", style="bold cyan")
     banner.append(" v" + __version__, style="dim")
     banner.append("\n")
-    banner.append("Iterative definition refinement for BFO/CCO ontologies", style="italic")
+    banner.append(
+        "Iterative definition refinement for BFO/CCO ontologies", style="italic"
+    )
 
     console.print(Panel(banner, border_style="cyan", padding=(0, 2)))
 
@@ -93,6 +95,7 @@ def create_progress_hooks(progress: Progress, task_id: Any, verbose: bool) -> Lo
     Returns:
         LoopHooks instance.
     """
+
     def on_iteration_start(iteration: int, _state: Any) -> None:
         progress.update(task_id, description=f"[cyan]Iteration {iteration}[/cyan]")
 
@@ -165,7 +168,9 @@ def print_result_summary(result: LoopResult) -> None:
     table.add_column("Value")
 
     status_style = "green" if result.converged else "red"
-    table.add_row("Status", f"[{status_style}]{result.status.value.upper()}[/{status_style}]")
+    table.add_row(
+        "Status", f"[{status_style}]{result.status.value.upper()}[/{status_style}]"
+    )
     table.add_row("Iterations", str(result.total_iterations))
     table.add_row("Duration", f"{result.duration_seconds:.2f}s")
     table.add_row("Final Definition", result.final_definition)
@@ -388,6 +393,7 @@ def run(
         error_console.print(f"[red]Error:[/red] {e}")
         if verbose:
             import traceback
+
             error_console.print(traceback.format_exc())
         sys.exit(EXIT_FAILURE)
 
@@ -507,20 +513,29 @@ def batch(
     classes: list[ClassInfo] = []
     for i, item in enumerate(classes_data):
         try:
-            classes.append(ClassInfo(
-                iri=item["iri"],
-                label=item["label"],
-                parent_class=item.get("parent", item.get("parent_class", "owl:Thing")),
-                sibling_classes=item.get("siblings", item.get("sibling_classes", [])),
-                is_ice=item.get("is_ice", False),
-                current_definition=item.get("definition", item.get("current_definition")),
-            ))
+            classes.append(
+                ClassInfo(
+                    iri=item["iri"],
+                    label=item["label"],
+                    parent_class=item.get(
+                        "parent", item.get("parent_class", "owl:Thing")
+                    ),
+                    sibling_classes=item.get(
+                        "siblings", item.get("sibling_classes", [])
+                    ),
+                    is_ice=item.get("is_ice", False),
+                    current_definition=item.get(
+                        "definition", item.get("current_definition")
+                    ),
+                )
+            )
         except Exception as e:
             raise click.ClickException(f"Invalid class at index {i}: {e}") from e
 
     # Order by dependency if requested
     if order_by_dependency:
         from ontoralph.batch import order_by_dependency as do_order
+
         try:
             classes = do_order(classes)
             if not quiet:
@@ -546,7 +561,9 @@ def batch(
     results: list[LoopResult] = []
     failed_count = 0
 
-    async def process_class(class_info: ClassInfo, progress: Progress, task_id: Any) -> LoopResult | None:
+    async def process_class(
+        class_info: ClassInfo, progress: Progress, task_id: Any
+    ) -> LoopResult | None:
         hooks = create_progress_hooks(progress, task_id, verbose)
         loop = RalphLoop(llm=llm, config=config, hooks=hooks)
         return await loop.run(class_info)
@@ -593,6 +610,7 @@ def batch(
         error_console.print(f"[red]Error:[/red] {e}")
         if verbose:
             import traceback
+
             error_console.print(traceback.format_exc())
 
     # Write individual results
@@ -606,6 +624,7 @@ def batch(
 
     # Write summary report
     from ontoralph.output import BatchReportGenerator
+
     batch_gen = BatchReportGenerator()
     summary = batch_gen.generate_summary_markdown(results)
     (output_dir / "SUMMARY.md").write_text(summary, encoding="utf-8")
@@ -614,6 +633,7 @@ def batch(
     sibling_issues: list[Any] = []
     if check_siblings and results:
         from ontoralph.batch import SiblingExclusivityChecker
+
         checker = SiblingExclusivityChecker()
         sibling_issues = checker.check_from_results(results)
 
@@ -633,9 +653,9 @@ def batch(
 
         # Generate combined graph
         gen = TurtleGenerator()
-        combined_turtle = gen.generate_batch([
-            (r.class_info, r.final_definition) for r in results
-        ])
+        combined_turtle = gen.generate_batch(
+            [(r.class_info, r.final_definition) for r in results]
+        )
 
         graph = Graph()
         graph.parse(data=combined_turtle, format="turtle")
@@ -652,8 +672,12 @@ def batch(
             console.print("[yellow]Output Validation Issues:[/yellow]")
 
             for issue in validation_issues:
-                severity_color = "red" if issue.severity.value == "violation" else "yellow"
-                console.print(f"  [{severity_color}]{issue.severity.value.upper()}[/{severity_color}] {issue.message}")
+                severity_color = (
+                    "red" if issue.severity.value == "violation" else "yellow"
+                )
+                console.print(
+                    f"  [{severity_color}]{issue.severity.value.upper()}[/{severity_color}] {issue.message}"
+                )
 
             for issue in dup_labels:
                 console.print(f"  [yellow]WARNING[/yellow] {issue.message}")
@@ -674,9 +698,19 @@ def batch(
         table.add_row("Passed", f"[green]{passed}[/green]")
         table.add_row("Failed", f"[red]{failed_count}[/red]")
         if check_siblings:
-            table.add_row("Sibling Issues", f"[yellow]{len(sibling_issues)}[/yellow]" if sibling_issues else "[green]0[/green]")
+            table.add_row(
+                "Sibling Issues",
+                f"[yellow]{len(sibling_issues)}[/yellow]"
+                if sibling_issues
+                else "[green]0[/green]",
+            )
         if validate_output:
-            table.add_row("Validation Issues", f"[yellow]{len(validation_issues)}[/yellow]" if validation_issues else "[green]0[/green]")
+            table.add_row(
+                "Validation Issues",
+                f"[yellow]{len(validation_issues)}[/yellow]"
+                if validation_issues
+                else "[green]0[/green]",
+            )
         table.add_row("Output Directory", str(output_dir))
 
         console.print(table)
@@ -765,7 +799,9 @@ def validate(
                 result.code,
                 result.name,
                 status_str,
-                result.evidence[:40] + "..." if len(result.evidence) > 40 else result.evidence,
+                result.evidence[:40] + "..."
+                if len(result.evidence) > 40
+                else result.evidence,
             )
 
         console.print(table)
@@ -774,7 +810,9 @@ def validate(
         if failed:
             console.print("[red]Failed checks:[/red]")
             for result in failed:
-                console.print(f"  [{result.severity.value}] {result.code} {result.name}")
+                console.print(
+                    f"  [{result.severity.value}] {result.code} {result.name}"
+                )
                 console.print(f"    {result.evidence}")
         else:
             console.print("[green]All checks passed![/green]")
@@ -884,14 +922,18 @@ classes:
 
     # Write config file
     if config_path.exists() and not force:
-        console.print(f"[yellow]Skipping {config_path} (already exists, use --force to overwrite)[/yellow]")
+        console.print(
+            f"[yellow]Skipping {config_path} (already exists, use --force to overwrite)[/yellow]"
+        )
     else:
         config_path.write_text(config_content, encoding="utf-8")
         files_created.append(config_path)
 
     # Write classes file
     if classes_path.exists() and not force:
-        console.print(f"[yellow]Skipping {classes_path} (already exists, use --force to overwrite)[/yellow]")
+        console.print(
+            f"[yellow]Skipping {classes_path} (already exists, use --force to overwrite)[/yellow]"
+        )
     else:
         classes_path.write_text(classes_content, encoding="utf-8")
         files_created.append(classes_path)
@@ -904,7 +946,9 @@ classes:
         console.print()
         console.print("[dim]Next steps:[/dim]")
         console.print("  1. Set your API key: export ANTHROPIC_API_KEY=your-key")
-        console.print("  2. Run a single class: ontoralph run --iri ':VerbPhrase' --label 'Verb Phrase' --parent 'cco:ICE' --ice")
+        console.print(
+            "  2. Run a single class: ontoralph run --iri ':VerbPhrase' --label 'Verb Phrase' --parent 'cco:ICE' --ice"
+        )
         console.print("  3. Or run batch: ontoralph batch classes.yaml")
     else:
         console.print("[yellow]No files created (all already exist)[/yellow]")

@@ -141,6 +141,7 @@ def create_app(
             return JSONResponse(status_code=404, content={"message": "Not found"})
 
     else:
+
         @app.get("/")
         async def no_frontend() -> JSONResponse:
             """Return message when frontend is not available."""

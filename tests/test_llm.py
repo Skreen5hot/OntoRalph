@@ -257,9 +257,7 @@ class TestMockProvider:
         assert "Occurrent" in result or "occurrent" in result.lower()
 
     @pytest.mark.asyncio
-    async def test_generate_custom_response(
-        self, sample_class_info: ClassInfo
-    ) -> None:
+    async def test_generate_custom_response(self, sample_class_info: ClassInfo) -> None:
         custom = "Custom definition for testing."
         provider = MockProvider(generate_response=custom)
         result = await provider.generate(sample_class_info)
@@ -312,7 +310,11 @@ class TestMockProvider:
 
         assert len(result) > 0
         assert len(provider.refine_calls) == 1
-        assert provider.refine_calls[0] == (sample_class_info, definition, sample_issues)
+        assert provider.refine_calls[0] == (
+            sample_class_info,
+            definition,
+            sample_issues,
+        )
 
     @pytest.mark.asyncio
     async def test_usage_tracking(self, sample_class_info: ClassInfo) -> None:
@@ -749,9 +751,7 @@ class TestPromptTemplateManagerExtended:
         from ontoralph.config import PromptConfig
         from ontoralph.llm.prompts import get_template_manager
 
-        config = PromptConfig(
-            generate_template="Test template ${label}"
-        )
+        config = PromptConfig(generate_template="Test template ${label}")
 
         manager = get_template_manager(config)
         class_info = ClassInfo(

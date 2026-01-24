@@ -164,12 +164,17 @@ class TestMultiIterationConvergence:
 
         assert result.total_iterations >= 1
         # Mock provider should produce PASS eventually
-        assert result.status in [VerifyStatus.PASS, VerifyStatus.ITERATE, VerifyStatus.FAIL]
+        assert result.status in [
+            VerifyStatus.PASS,
+            VerifyStatus.ITERATE,
+            VerifyStatus.FAIL,
+        ]
 
     @pytest.mark.asyncio
     async def test_hooks_track_all_iterations(self) -> None:
         """Test that hooks are called for every iteration."""
         from ontoralph.core.models import LoopIteration
+
         iterations_seen: list[int] = []
 
         def on_iteration_end(iteration: LoopIteration) -> None:
@@ -207,6 +212,7 @@ class TestMaxIterationsReached:
 
         # Provider that always returns something needing improvement
         from ontoralph.llm import FailingMockProvider
+
         provider = FailingMockProvider()
 
         loop = RalphLoop(
@@ -226,8 +232,12 @@ class TestErrorHandling:
     async def test_batch_continues_after_error(self) -> None:
         """Test batch processing continues after individual errors."""
         classes = [
-            ClassInfo(iri=":Good1", label="Good One", parent_class="owl:Thing", is_ice=True),
-            ClassInfo(iri=":Good2", label="Good Two", parent_class="owl:Thing", is_ice=True),
+            ClassInfo(
+                iri=":Good1", label="Good One", parent_class="owl:Thing", is_ice=True
+            ),
+            ClassInfo(
+                iri=":Good2", label="Good Two", parent_class="owl:Thing", is_ice=True
+            ),
         ]
 
         provider = MockProvider()
@@ -283,7 +293,9 @@ class TestBatchProcessing:
         """Test batch processing respects dependency order."""
         classes = [
             ClassInfo(iri=":Child", label="Child", parent_class=":Parent", is_ice=True),
-            ClassInfo(iri=":Parent", label="Parent", parent_class="owl:Thing", is_ice=True),
+            ClassInfo(
+                iri=":Parent", label="Parent", parent_class="owl:Thing", is_ice=True
+            ),
         ]
 
         orderer = DependencyOrderer()
@@ -302,8 +314,12 @@ class TestBatchProcessing:
             ":Dog": "An animal that is a domesticated canine.",
         }
         results_class_infos = {
-            ":Cat": ClassInfo(iri=":Cat", label="Cat", parent_class=":Pet", is_ice=False),
-            ":Dog": ClassInfo(iri=":Dog", label="Dog", parent_class=":Pet", is_ice=False),
+            ":Cat": ClassInfo(
+                iri=":Cat", label="Cat", parent_class=":Pet", is_ice=False
+            ),
+            ":Dog": ClassInfo(
+                iri=":Dog", label="Dog", parent_class=":Pet", is_ice=False
+            ),
         }
 
         issues = check_sibling_exclusivity(results_definitions, results_class_infos)
@@ -325,7 +341,9 @@ class TestBatchProcessing:
 
         # Should find the inconsistent use of 'represents' vs 'denotes'
         terminology_issues = [i for i in issues if i.issue_type.value == "terminology"]
-        assert len(terminology_issues) >= 0  # May or may not flag depending on implementation
+        assert (
+            len(terminology_issues) >= 0
+        )  # May or may not flag depending on implementation
 
 
 class TestGoldenFiles:
@@ -351,7 +369,9 @@ class TestGoldenFiles:
 
         # Core requirements should pass
         core_results = [r for r in results if r.code.startswith("C")]
-        assert all(r.passed for r in core_results), f"Core failures: {[r for r in core_results if not r.passed]}"
+        assert all(r.passed for r in core_results), (
+            f"Core failures: {[r for r in core_results if not r.passed]}"
+        )
 
         # No red flags
         red_flags = [r for r in results if r.code.startswith("R")]
@@ -549,15 +569,21 @@ class TestSiblingExclusivityChecker:
         """Test check_from_results groups by parent."""
         results = [
             make_loop_result(
-                class_info=ClassInfo(iri=":A", label="A", parent_class=":Parent1", is_ice=True),
+                class_info=ClassInfo(
+                    iri=":A", label="A", parent_class=":Parent1", is_ice=True
+                ),
                 definition="An ICE that denotes A.",
             ),
             make_loop_result(
-                class_info=ClassInfo(iri=":B", label="B", parent_class=":Parent1", is_ice=True),
+                class_info=ClassInfo(
+                    iri=":B", label="B", parent_class=":Parent1", is_ice=True
+                ),
                 definition="An ICE that denotes B.",
             ),
             make_loop_result(
-                class_info=ClassInfo(iri=":C", label="C", parent_class=":Parent2", is_ice=True),
+                class_info=ClassInfo(
+                    iri=":C", label="C", parent_class=":Parent2", is_ice=True
+                ),
                 definition="An ICE that denotes C.",
             ),
         ]
@@ -570,17 +596,24 @@ class TestSiblingExclusivityChecker:
         for issue in issues:
             # Should not compare across different parents
             if issue.class1_iri == ":C" or issue.class2_iri == ":C":
-                assert issue.class1_iri in [":A", ":B"] or issue.class2_iri in [":A", ":B"]
+                assert issue.class1_iri in [":A", ":B"] or issue.class2_iri in [
+                    ":A",
+                    ":B",
+                ]
 
     def test_check_from_results_no_grouping(self) -> None:
         """Test check_from_results without grouping."""
         results = [
             make_loop_result(
-                class_info=ClassInfo(iri=":A", label="A", parent_class=":Parent1", is_ice=True),
+                class_info=ClassInfo(
+                    iri=":A", label="A", parent_class=":Parent1", is_ice=True
+                ),
                 definition="An ICE that denotes A.",
             ),
             make_loop_result(
-                class_info=ClassInfo(iri=":B", label="B", parent_class=":Parent2", is_ice=True),
+                class_info=ClassInfo(
+                    iri=":B", label="B", parent_class=":Parent2", is_ice=True
+                ),
                 definition="An ICE that denotes A.",  # Same as A!
             ),
         ]
@@ -619,11 +652,15 @@ class TestBatchReportGenerator:
         """Test batch report generates summary markdown."""
         results = [
             make_loop_result(
-                class_info=ClassInfo(iri=":A", label="A", parent_class="owl:Thing", is_ice=True),
+                class_info=ClassInfo(
+                    iri=":A", label="A", parent_class="owl:Thing", is_ice=True
+                ),
                 definition="An ICE that denotes A.",
             ),
             make_loop_result(
-                class_info=ClassInfo(iri=":B", label="B", parent_class="owl:Thing", is_ice=True),
+                class_info=ClassInfo(
+                    iri=":B", label="B", parent_class="owl:Thing", is_ice=True
+                ),
                 definition="An ICE that denotes B.",
             ),
         ]

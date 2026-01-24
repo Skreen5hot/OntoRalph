@@ -223,11 +223,13 @@ async def run_ralph_loop_stream(
         async def error_generator() -> AsyncGenerator[dict[str, str], None]:
             yield {
                 "event": "error",
-                "data": json.dumps({
-                    "code": ErrorCode.INVALID_TOKEN.value,
-                    "message": "Invalid or expired session token",
-                    "retryable": False,
-                }),
+                "data": json.dumps(
+                    {
+                        "code": ErrorCode.INVALID_TOKEN.value,
+                        "message": "Invalid or expired session token",
+                        "retryable": False,
+                    }
+                ),
             }
 
         return EventSourceResponse(error_generator())
@@ -258,69 +260,84 @@ async def run_ralph_loop_stream(
 
         def make_hook_sync(coro_func: Any) -> Any:
             """Wrap an async callback for sync hook invocation."""
+
             def sync_wrapper(*args: Any, **kwargs: Any) -> None:
                 # Put event in queue to be processed by async generator
                 asyncio.create_task(coro_func(*args, **kwargs))
+
             return sync_wrapper
 
         async def on_iteration_start(iteration: int, state: LoopState) -> None:
-            await event_queue.put({
-                "event": "iteration_start",
-                "data": {
-                    "iteration": iteration,
-                    "max_iterations": state.max_iterations,
-                },
-            })
+            await event_queue.put(
+                {
+                    "event": "iteration_start",
+                    "data": {
+                        "iteration": iteration,
+                        "max_iterations": state.max_iterations,
+                    },
+                }
+            )
 
         async def on_generate(definition: str) -> None:
-            await event_queue.put({
-                "event": "generate",
-                "data": {"definition": definition},
-            })
+            await event_queue.put(
+                {
+                    "event": "generate",
+                    "data": {"definition": definition},
+                }
+            )
 
         async def on_critique(results: list[CheckResult]) -> None:
             failed = [r for r in results if not r.passed]
-            await event_queue.put({
-                "event": "critique",
-                "data": {
-                    "passed_count": len(results) - len(failed),
-                    "failed_count": len(failed),
-                    "failed_checks": [r.code for r in failed],
-                },
-            })
+            await event_queue.put(
+                {
+                    "event": "critique",
+                    "data": {
+                        "passed_count": len(results) - len(failed),
+                        "failed_count": len(failed),
+                        "failed_checks": [r.code for r in failed],
+                    },
+                }
+            )
 
         async def on_refine(definition: str) -> None:
-            await event_queue.put({
-                "event": "refine",
-                "data": {"definition": definition},
-            })
+            await event_queue.put(
+                {
+                    "event": "refine",
+                    "data": {"definition": definition},
+                }
+            )
 
         async def on_verify(
             verify_status: VerifyStatus, results: list[CheckResult]
         ) -> None:
             failed = [r for r in results if not r.passed]
-            await event_queue.put({
-                "event": "verify",
-                "data": {
-                    "status": verify_status.value,
-                    "passed_count": len(results) - len(failed),
-                    "failed_count": len(failed),
-                },
-            })
+            await event_queue.put(
+                {
+                    "event": "verify",
+                    "data": {
+                        "status": verify_status.value,
+                        "passed_count": len(results) - len(failed),
+                        "failed_count": len(failed),
+                    },
+                }
+            )
 
         async def on_iteration_end(iteration: LoopIteration) -> None:
-            await event_queue.put({
-                "event": "iteration_end",
-                "data": {
-                    "iteration": iteration.iteration_number,
-                    "definition": iteration.final_definition,
-                    "status": iteration.verify_status.value,
-                },
-            })
+            await event_queue.put(
+                {
+                    "event": "iteration_end",
+                    "data": {
+                        "iteration": iteration.iteration_number,
+                        "definition": iteration.final_definition,
+                        "status": iteration.verify_status.value,
+                    },
+                }
+            )
 
         # Create hooks with queue-based callbacks
         hooks = LoopHooks(
-            on_iteration_start=lambda i, s: asyncio.get_event_loop().call_soon_threadsafe(
+            on_iteration_start=lambda i,
+            s: asyncio.get_event_loop().call_soon_threadsafe(
                 lambda: asyncio.create_task(on_iteration_start(i, s))
             ),
             on_generate=lambda d: asyncio.get_event_loop().call_soon_threadsafe(
@@ -360,9 +377,7 @@ async def run_ralph_loop_stream(
 
                 try:
                     # Get next event with timeout
-                    event = await asyncio.wait_for(
-                        event_queue.get(), timeout=0.1
-                    )
+                    event = await asyncio.wait_for(event_queue.get(), timeout=0.1)
                     yield {
                         "event": event["event"],
                         "data": json.dumps(event["data"]),
@@ -387,11 +402,13 @@ async def run_ralph_loop_stream(
         if cancelled:
             yield {
                 "event": "error",
-                "data": json.dumps({
-                    "code": "CANCELLED",
-                    "message": "Request cancelled by client",
-                    "retryable": False,
-                }),
+                "data": json.dumps(
+                    {
+                        "code": "CANCELLED",
+                        "message": "Request cancelled by client",
+                        "retryable": False,
+                    }
+                ),
             }
 
     return EventSourceResponse(stream_generator())
@@ -408,10 +425,12 @@ async def run_loop_with_error_handling(
 
         # Send complete event
         response = loop_result_to_response(result)
-        await event_queue.put({
-            "event": "complete",
-            "data": response.model_dump(),
-        })
+        await event_queue.put(
+            {
+                "event": "complete",
+                "data": response.model_dump(),
+            }
+        )
 
         return result
 
@@ -436,14 +455,16 @@ async def run_loop_with_error_handling(
             error_code = ErrorCode.API_ERROR.value
             retryable = False
 
-        await event_queue.put({
-            "event": "error",
-            "data": {
-                "code": error_code,
-                "message": error_message,
-                "retryable": retryable,
-                "retry_after": retry_after,
-            },
-        })
+        await event_queue.put(
+            {
+                "event": "error",
+                "data": {
+                    "code": error_code,
+                    "message": error_message,
+                    "retryable": retryable,
+                    "retry_after": retry_after,
+                },
+            }
+        )
 
         return None

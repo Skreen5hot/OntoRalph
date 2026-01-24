@@ -1,0 +1,39 @@
+PREFIX cco2: <https://www.commoncoreontologies.org/>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+
+SELECT ?resource ?label ?curatedIn ?value ?violation ?violationDescrption
+
+WHERE {
+   VALUES ?expectedResource { rdf:Alt
+                              rdf:Bag
+                              rdf:first
+                              rdf:HTML
+                              rdf:langString
+                              rdf:List
+                              rdf:object
+                              rdf:predicate
+                              rdf:Property
+                              rdf:rest
+                              rdf:Seq
+                              rdf:Statement
+                              rdf:subject
+                              rdf:type
+                              rdf:value
+                              rdf:XMLLiteral
+                              }
+  FILTER (STRSTARTS(STR(?resource), STR(rdf:)) && ?resource != ?expectedResource)
+
+  OPTIONAL {?resource rdfs:label ?label }
+  OPTIONAL {?resource cco2:ont00001760 ?curatedIn }
+  
+  BIND ( ?expectedResource AS ?value )
+  BIND ( "Improper RDF Vocabulary" AS ?violation )
+  BIND ( CONCAT("The resource '", STR(?expectedResource), "' is not defined in RDF namespace.") AS ?violationDescription )
+  
+}

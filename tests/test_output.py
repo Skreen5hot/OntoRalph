@@ -227,9 +227,7 @@ class TestTurtleGenerator:
         parents = list(graph.objects(class_uri, RDFS.subClassOf))
         assert len(parents) == 1
 
-    def test_generate_non_ice(
-        self, non_ice_class_info: ClassInfo
-    ) -> None:
+    def test_generate_non_ice(self, non_ice_class_info: ClassInfo) -> None:
         """Test Turtle generation for non-ICE class."""
         generator = TurtleGenerator()
         definition = "An occurrent that unfolds through temporal extension."
@@ -258,9 +256,7 @@ class TestTurtleGenerator:
         definitions = list(graph.objects(predicate=SKOS.definition))
         assert len(definitions) == 1
 
-    def test_generate_multiline_definition(
-        self, sample_class_info: ClassInfo
-    ) -> None:
+    def test_generate_multiline_definition(self, sample_class_info: ClassInfo) -> None:
         """Test multi-line definitions use correct escaping (AC5.3)."""
         generator = TurtleGenerator()
         # Multi-line definition
@@ -314,9 +310,7 @@ class TestTurtleGenerator:
         class_count = len(list(graph.subjects(RDF.type, OWL.Class)))
         assert class_count == 2
 
-    def test_generate_from_result(
-        self, sample_loop_result: LoopResult
-    ) -> None:
+    def test_generate_from_result(self, sample_loop_result: LoopResult) -> None:
         """Test generation from LoopResult."""
         generator = TurtleGenerator()
         turtle = generator.generate_from_result(sample_loop_result)
@@ -330,9 +324,7 @@ class TestTurtleGenerator:
         self, sample_class_info: ClassInfo, sample_definition: str
     ) -> None:
         """Test custom base namespace."""
-        generator = TurtleGenerator(
-            base_namespace="http://myontology.org/classes#"
-        )
+        generator = TurtleGenerator(base_namespace="http://myontology.org/classes#")
         turtle = generator.generate(sample_class_info, sample_definition)
 
         assert "http://myontology.org/classes#" in turtle
@@ -462,9 +454,7 @@ class TestTurtleDiff:
 class TestReportGenerator:
     """Tests for ReportGenerator."""
 
-    def test_generate_markdown(
-        self, sample_loop_result: LoopResult
-    ) -> None:
+    def test_generate_markdown(self, sample_loop_result: LoopResult) -> None:
         """Test Markdown report generation."""
         generator = ReportGenerator()
         markdown = generator.generate_markdown(sample_loop_result)
@@ -495,9 +485,7 @@ class TestReportGenerator:
         # Should show evolution section
         assert "## Definition Evolution" in markdown
 
-    def test_generate_summary(
-        self, sample_loop_result: LoopResult
-    ) -> None:
+    def test_generate_summary(self, sample_loop_result: LoopResult) -> None:
         """Test summary generation."""
         generator = ReportGenerator()
         summary = generator.generate_summary(sample_loop_result)
@@ -506,9 +494,7 @@ class TestReportGenerator:
         assert "PASS" in summary
         assert "1 iteration" in summary
 
-    def test_generate_json(
-        self, sample_loop_result: LoopResult
-    ) -> None:
+    def test_generate_json(self, sample_loop_result: LoopResult) -> None:
         """Test JSON report generation."""
         generator = ReportGenerator()
         json_str = generator.generate_json(sample_loop_result)
@@ -522,9 +508,7 @@ class TestReportGenerator:
         assert data["total_iterations"] == 1
         assert len(data["iterations"]) == 1
 
-    def test_json_roundtrip(
-        self, sample_loop_result: LoopResult
-    ) -> None:
+    def test_json_roundtrip(self, sample_loop_result: LoopResult) -> None:
         """Test that JSON output can reconstruct loop history (AC5.5)."""
         generator = ReportGenerator()
         json_str = generator.generate_json(sample_loop_result)
@@ -541,7 +525,9 @@ class TestReportGenerator:
         for i, iteration_data in enumerate(data["iterations"]):
             original = sample_loop_result.iterations[i]
             assert iteration_data["iteration_number"] == original.iteration_number
-            assert iteration_data["generated_definition"] == original.generated_definition
+            assert (
+                iteration_data["generated_definition"] == original.generated_definition
+            )
             assert iteration_data["verify_status"] == original.verify_status.value
 
             # Verify check results
@@ -550,9 +536,7 @@ class TestReportGenerator:
                 assert check_data["code"] == original_check.code
                 assert check_data["passed"] == original_check.passed
 
-    def test_generate_html(
-        self, sample_loop_result: LoopResult
-    ) -> None:
+    def test_generate_html(self, sample_loop_result: LoopResult) -> None:
         """Test HTML report generation."""
         generator = ReportGenerator()
         html = generator.generate_html(sample_loop_result)
@@ -567,9 +551,7 @@ class TestReportGenerator:
         assert "Verb Phrase" in html
         assert "PASS" in html
 
-    def test_report_without_timestamps(
-        self, sample_loop_result: LoopResult
-    ) -> None:
+    def test_report_without_timestamps(self, sample_loop_result: LoopResult) -> None:
         """Test report generation without timestamps."""
         generator = ReportGenerator(include_timestamps=False)
         markdown = generator.generate_markdown(sample_loop_result)
@@ -652,9 +634,7 @@ class TestBatchReportGenerator:
 
         return [passing, failing]
 
-    def test_generate_summary_markdown(
-        self, batch_results: list[LoopResult]
-    ) -> None:
+    def test_generate_summary_markdown(self, batch_results: list[LoopResult]) -> None:
         """Test batch summary markdown generation."""
         generator = BatchReportGenerator()
         markdown = generator.generate_summary_markdown(batch_results)
@@ -672,9 +652,7 @@ class TestBatchReportGenerator:
         assert "## Failed Classes" in markdown
         assert "Failing Class" in markdown
 
-    def test_generate_json(
-        self, batch_results: list[LoopResult]
-    ) -> None:
+    def test_generate_json(self, batch_results: list[LoopResult]) -> None:
         """Test batch JSON generation."""
         generator = BatchReportGenerator()
         json_str = generator.generate_json(batch_results)
@@ -738,7 +716,7 @@ class TestIntegration:
         definitions = [
             'An ICE that denotes a "quoted term".',
             "An ICE that denotes a term with 'single quotes'.",
-            'An ICE that "uses" both \'quote\' types.',
+            "An ICE that \"uses\" both 'quote' types.",
             "An ICE with special chars: <>&",
         ]
 

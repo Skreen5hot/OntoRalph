@@ -212,9 +212,7 @@ class TestHybridChecking:
     """Tests for hybrid automated + LLM checking."""
 
     @pytest.mark.asyncio
-    async def test_red_flag_skips_llm(
-        self, sample_class_info: ClassInfo
-    ) -> None:
+    async def test_red_flag_skips_llm(self, sample_class_info: ClassInfo) -> None:
         """Test that red flags skip LLM critique."""
         provider = MockProvider(
             generate_response="An ICE that represents something extracted from text.",
@@ -287,9 +285,7 @@ class TestConvergence:
         assert result.total_iterations == 1
 
     @pytest.mark.asyncio
-    async def test_non_ice_convergence(
-        self, non_ice_class_info: ClassInfo
-    ) -> None:
+    async def test_non_ice_convergence(self, non_ice_class_info: ClassInfo) -> None:
         """Test convergence for non-ICE class."""
         provider = MockProvider(
             generate_response="An occurrent that unfolds through temporal extension.",
@@ -309,9 +305,7 @@ class TestConvergence:
 class TestStateSerialization:
     """Tests for loop state JSON serialization."""
 
-    def test_loop_state_json_roundtrip(
-        self, sample_class_info: ClassInfo
-    ) -> None:
+    def test_loop_state_json_roundtrip(self, sample_class_info: ClassInfo) -> None:
         """Test that LoopState serializes to JSON and back correctly."""
         state = LoopState(
             class_info=sample_class_info,
@@ -361,9 +355,7 @@ class TestErrorHandling:
     """Tests for error handling in the loop."""
 
     @pytest.mark.asyncio
-    async def test_llm_error_in_generate(
-        self, sample_class_info: ClassInfo
-    ) -> None:
+    async def test_llm_error_in_generate(self, sample_class_info: ClassInfo) -> None:
         """Test handling of LLM errors during generation."""
         provider = FailingMockProvider(
             fail_on=LoopPhase.GENERATE,
@@ -380,9 +372,7 @@ class TestErrorHandling:
             await loop.run(sample_class_info)
 
     @pytest.mark.asyncio
-    async def test_llm_error_in_refine(
-        self, sample_class_info: ClassInfo
-    ) -> None:
+    async def test_llm_error_in_refine(self, sample_class_info: ClassInfo) -> None:
         """Test handling of LLM errors during refinement."""
         provider = FailingMockProvider(
             fail_on=LoopPhase.REFINE,
@@ -404,9 +394,7 @@ class TestLoopConfig:
     """Tests for loop configuration."""
 
     @pytest.mark.asyncio
-    async def test_custom_max_iterations(
-        self, sample_class_info: ClassInfo
-    ) -> None:
+    async def test_custom_max_iterations(self, sample_class_info: ClassInfo) -> None:
         """Test custom max iterations setting."""
         provider = MockProvider(
             generate_response="An ICE that represents something.",
@@ -422,9 +410,7 @@ class TestLoopConfig:
         assert result.total_iterations == 2
 
     @pytest.mark.asyncio
-    async def test_disable_hybrid_checking(
-        self, sample_class_info: ClassInfo
-    ) -> None:
+    async def test_disable_hybrid_checking(self, sample_class_info: ClassInfo) -> None:
         """Test disabling hybrid checking uses LLM for all checks."""
         provider = MockProvider(
             generate_response="An ICE that denotes something in formal speech.",
@@ -449,9 +435,7 @@ class TestIterationTracking:
     """Tests for iteration history tracking."""
 
     @pytest.mark.asyncio
-    async def test_iterations_recorded(
-        self, sample_class_info: ClassInfo
-    ) -> None:
+    async def test_iterations_recorded(self, sample_class_info: ClassInfo) -> None:
         """Test that all iterations are recorded in result."""
         provider = MockProvider(
             generate_response="An ICE that represents something.",

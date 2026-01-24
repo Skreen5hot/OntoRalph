@@ -128,9 +128,7 @@ class SessionUsage:
             "total_output_tokens": self.total_output_tokens,
             "total_tokens": self.total_tokens,
             "estimated_cost_usd": round(self.total_cost_usd, 6),
-            "by_phase": {
-                phase.value: len(self.by_phase(phase)) for phase in LoopPhase
-            },
+            "by_phase": {phase.value: len(self.by_phase(phase)) for phase in LoopPhase},
         }
 
 

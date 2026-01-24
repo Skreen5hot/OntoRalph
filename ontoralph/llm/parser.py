@@ -203,7 +203,9 @@ class ResponseParser:
             name = item.get("name", self.CHECK_NAMES.get(code, code))
 
             # Get evidence
-            evidence = item.get("evidence", item.get("reason", item.get("explanation", "")))
+            evidence = item.get(
+                "evidence", item.get("reason", item.get("explanation", ""))
+            )
             if not evidence:
                 evidence = "No evidence provided"
 
@@ -222,7 +224,9 @@ class ResponseParser:
 
         return results
 
-    def validate_definition_format(self, definition: str, is_ice: bool = False) -> list[str]:
+    def validate_definition_format(
+        self, definition: str, is_ice: bool = False
+    ) -> list[str]:
         """Validate basic format requirements for a definition.
 
         Args:
@@ -248,17 +252,23 @@ class ResponseParser:
         # Count sentences (rough check)
         sentences = len(re.findall(r"[.!?]+(?:\s|$)", definition))
         if sentences > 1:
-            warnings.append(f"Definition appears to have {sentences} sentences (should be 1)")
+            warnings.append(
+                f"Definition appears to have {sentences} sentences (should be 1)"
+            )
 
         # ICE-specific checks
         if is_ice:
             definition_lower = definition.lower()
-            if not definition_lower.startswith("an ice") and not definition_lower.startswith(
-                "an information content entity"
-            ):
-                warnings.append("ICE definition should start with 'An ICE' or 'An Information Content Entity'")
+            if not definition_lower.startswith(
+                "an ice"
+            ) and not definition_lower.startswith("an information content entity"):
+                warnings.append(
+                    "ICE definition should start with 'An ICE' or 'An Information Content Entity'"
+                )
 
             if "represents" in definition_lower:
-                warnings.append("ICE definitions should use 'denotes' instead of 'represents'")
+                warnings.append(
+                    "ICE definitions should use 'denotes' instead of 'represents'"
+                )
 
         return warnings

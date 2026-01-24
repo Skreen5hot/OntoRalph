@@ -76,20 +76,28 @@ class TestRunCommand:
 
     def test_run_requires_iri(self, runner: CliRunner) -> None:
         """Test that run requires --iri."""
-        result = runner.invoke(main, ["run", "--label", "Test", "--parent", "owl:Thing"])
+        result = runner.invoke(
+            main, ["run", "--label", "Test", "--parent", "owl:Thing"]
+        )
 
         assert result.exit_code != 0
         assert "Missing option '--iri'" in result.output
 
     def test_run_dry_run(self, runner: CliRunner) -> None:
         """Test --dry-run produces no API calls (AC6.4)."""
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--dry-run",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--dry-run",
+            ],
+        )
 
         assert result.exit_code == EXIT_SUCCESS
         assert "Dry run mode" in result.output
@@ -98,15 +106,22 @@ class TestRunCommand:
 
     def test_run_dry_run_with_siblings(self, runner: CliRunner) -> None:
         """Test dry-run shows siblings correctly."""
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "cco:ICE",
-            "--siblings", ":Sibling1,:Sibling2",
-            "--ice",
-            "--dry-run",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "cco:ICE",
+                "--siblings",
+                ":Sibling1,:Sibling2",
+                "--ice",
+                "--dry-run",
+            ],
+        )
 
         assert result.exit_code == EXIT_SUCCESS
         assert ":Sibling1" in result.output
@@ -116,16 +131,25 @@ class TestRunCommand:
         """Test run command processes single class end-to-end (AC6.1)."""
         output_file = temp_dir / "output.ttl"
 
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "cco:InformationContentEntity",
-            "--ice",
-            "--provider", "mock",
-            "--output", str(output_file),
-            "--format", "turtle",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "cco:InformationContentEntity",
+                "--ice",
+                "--provider",
+                "mock",
+                "--output",
+                str(output_file),
+                "--format",
+                "turtle",
+            ],
+        )
 
         # Command should complete (may pass or fail based on checklist)
         assert result.exit_code in [EXIT_SUCCESS, EXIT_FAILURE]
@@ -138,14 +162,22 @@ class TestRunCommand:
 
     def test_run_with_mock_json_format(self, runner: CliRunner) -> None:
         """Test run with JSON output format."""
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--provider", "mock",
-            "--format", "json",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--provider",
+                "mock",
+                "--format",
+                "json",
+            ],
+        )
 
         # Should run (pass or fail)
         assert result.exit_code in [EXIT_SUCCESS, EXIT_FAILURE]
@@ -154,14 +186,22 @@ class TestRunCommand:
 
     def test_run_with_mock_markdown_format(self, runner: CliRunner) -> None:
         """Test run with Markdown output format."""
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--provider", "mock",
-            "--format", "markdown",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--provider",
+                "mock",
+                "--format",
+                "markdown",
+            ],
+        )
 
         # Should run (pass or fail)
         assert result.exit_code in [EXIT_SUCCESS, EXIT_FAILURE]
@@ -169,14 +209,21 @@ class TestRunCommand:
 
     def test_run_quiet_mode(self, runner: CliRunner) -> None:
         """Test run with --quiet flag."""
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--provider", "mock",
-            "--quiet",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--provider",
+                "mock",
+                "--quiet",
+            ],
+        )
 
         # Should complete without crashing
         assert result.exit_code in [EXIT_SUCCESS, EXIT_FAILURE]
@@ -189,13 +236,21 @@ class TestRunCommand:
         env = os.environ.copy()
         env.pop("ANTHROPIC_API_KEY", None)
 
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--provider", "claude",
-        ], env=env)
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--provider",
+                "claude",
+            ],
+            env=env,
+        )
 
         assert result.exit_code != EXIT_SUCCESS
         assert "ANTHROPIC_API_KEY" in result.output
@@ -245,13 +300,19 @@ classes:
 
         output_dir = temp_dir / "results"
 
-        result = runner.invoke(main, [
-            "batch",
-            str(input_file),
-            "--output", str(output_dir),
-            "--provider", "mock",
-            "--format", "turtle",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "batch",
+                str(input_file),
+                "--output",
+                str(output_dir),
+                "--provider",
+                "mock",
+                "--format",
+                "turtle",
+            ],
+        )
 
         # Should complete (success, partial, or failure)
         assert result.exit_code in [EXIT_SUCCESS, EXIT_FAILURE, 2]
@@ -295,11 +356,14 @@ class TestValidateCommand:
 
     def test_validate_passing_definition(self, runner: CliRunner) -> None:
         """Test validate with passing definition."""
-        result = runner.invoke(main, [
-            "validate",
-            "An ICE that denotes an occurrent as specified in formal discourse.",
-            "--ice",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "validate",
+                "An ICE that denotes an occurrent as specified in formal discourse.",
+                "--ice",
+            ],
+        )
 
         # Check output contains status info
         assert "PASS" in result.output or "FAIL" in result.output
@@ -307,11 +371,14 @@ class TestValidateCommand:
 
     def test_validate_failing_definition(self, runner: CliRunner) -> None:
         """Test validate with failing definition."""
-        result = runner.invoke(main, [
-            "validate",
-            "An ICE that represents something extracted from text.",
-            "--ice",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "validate",
+                "An ICE that represents something extracted from text.",
+                "--ice",
+            ],
+        )
 
         # Should fail due to red flags
         assert result.exit_code == EXIT_FAILURE
@@ -319,12 +386,15 @@ class TestValidateCommand:
 
     def test_validate_quiet_mode(self, runner: CliRunner) -> None:
         """Test validate with --quiet outputs only pass/fail."""
-        result = runner.invoke(main, [
-            "validate",
-            "An ICE that denotes something.",
-            "--ice",
-            "--quiet",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "validate",
+                "An ICE that denotes something.",
+                "--ice",
+                "--quiet",
+            ],
+        )
 
         # Output should be minimal
         output = result.output.strip()
@@ -332,12 +402,15 @@ class TestValidateCommand:
 
     def test_validate_verbose_mode(self, runner: CliRunner) -> None:
         """Test validate with --verbose shows all checks."""
-        result = runner.invoke(main, [
-            "validate",
-            "An ICE that denotes something.",
-            "--ice",
-            "--verbose",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "validate",
+                "An ICE that denotes something.",
+                "--ice",
+                "--verbose",
+            ],
+        )
 
         assert result.exit_code in [EXIT_SUCCESS, EXIT_FAILURE]
         # Should show checklist table
@@ -347,12 +420,16 @@ class TestValidateCommand:
 
     def test_validate_with_term(self, runner: CliRunner) -> None:
         """Test validate with --term for circularity check."""
-        result = runner.invoke(main, [
-            "validate",
-            "A verb phrase is a phrase containing a verb.",
-            "--term", "Verb Phrase",
-            "--no-ice",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "validate",
+                "A verb phrase is a phrase containing a verb.",
+                "--term",
+                "Verb Phrase",
+                "--no-ice",
+            ],
+        )
 
         # Should fail circularity check
         assert result.exit_code == EXIT_FAILURE
@@ -371,10 +448,14 @@ class TestInitCommand:
 
     def test_init_creates_files(self, runner: CliRunner, temp_dir: Path) -> None:
         """Test init creates config files."""
-        result = runner.invoke(main, [
-            "init",
-            "--output", str(temp_dir),
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "init",
+                "--output",
+                str(temp_dir),
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Created files" in result.output
@@ -395,10 +476,14 @@ class TestInitCommand:
         # Create existing file
         (temp_dir / "ontoralph.yaml").write_text("existing content")
 
-        result = runner.invoke(main, [
-            "init",
-            "--output", str(temp_dir),
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "init",
+                "--output",
+                str(temp_dir),
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Skipping" in result.output
@@ -411,11 +496,15 @@ class TestInitCommand:
         # Create existing file
         (temp_dir / "ontoralph.yaml").write_text("existing content")
 
-        result = runner.invoke(main, [
-            "init",
-            "--output", str(temp_dir),
-            "--force",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "init",
+                "--output",
+                str(temp_dir),
+                "--force",
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Created files" in result.output
@@ -430,24 +519,30 @@ class TestExitCodes:
     def test_exit_success_on_pass(self, runner: CliRunner) -> None:
         """Test exit code 0 on success (AC6.6)."""
         # Use a definition that should pass all checks
-        result = runner.invoke(main, [
-            "validate",
-            "An ICE that denotes a concept as formally specified in discourse.",
-            "--ice",
-            "--quiet",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "validate",
+                "An ICE that denotes a concept as formally specified in discourse.",
+                "--ice",
+                "--quiet",
+            ],
+        )
 
         # This definition should pass
         assert result.exit_code == EXIT_SUCCESS
 
     def test_exit_failure_on_fail(self, runner: CliRunner) -> None:
         """Test exit code 1 on failure (AC6.6)."""
-        result = runner.invoke(main, [
-            "validate",
-            "An ICE that represents something extracted.",
-            "--ice",
-            "--quiet",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "validate",
+                "An ICE that represents something extracted.",
+                "--ice",
+                "--quiet",
+            ],
+        )
 
         assert result.exit_code == EXIT_FAILURE
 
@@ -462,38 +557,58 @@ class TestIntegration:
         assert result.exit_code == 0
 
         # 2. Run single class (may pass or fail based on checklist)
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--provider", "mock",
-            "--output", str(temp_dir / "test.ttl"),
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--provider",
+                "mock",
+                "--output",
+                str(temp_dir / "test.ttl"),
+            ],
+        )
         assert result.exit_code in [EXIT_SUCCESS, EXIT_FAILURE]
         assert (temp_dir / "test.ttl").exists()
 
         # 3. Batch process
         classes_file = temp_dir / "classes.yaml"
-        result = runner.invoke(main, [
-            "batch",
-            str(classes_file),
-            "--output", str(temp_dir / "batch_results"),
-            "--provider", "mock",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "batch",
+                str(classes_file),
+                "--output",
+                str(temp_dir / "batch_results"),
+                "--provider",
+                "mock",
+            ],
+        )
         # May have partial success
         assert result.exit_code in [EXIT_SUCCESS, EXIT_FAILURE, 2]
 
     def test_verbose_shows_progress(self, runner: CliRunner) -> None:
         """Test verbose mode shows iteration progress."""
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--provider", "mock",
-            "--verbose",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--provider",
+                "mock",
+                "--verbose",
+            ],
+        )
 
         assert result.exit_code in [EXIT_SUCCESS, EXIT_FAILURE]
         # Verbose output should include more details
@@ -505,13 +620,20 @@ class TestProviderSelection:
 
     def test_unknown_provider_fails(self, runner: CliRunner) -> None:
         """Test that unknown provider raises error."""
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--provider", "invalid_provider",
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--provider",
+                "invalid_provider",
+            ],
+        )
 
         assert result.exit_code != 0
         # Click validates the provider choice
@@ -524,13 +646,21 @@ class TestProviderSelection:
         env = os.environ.copy()
         env.pop("ANTHROPIC_API_KEY", None)
 
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--provider", "claude",
-        ], env=env)
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--provider",
+                "claude",
+            ],
+            env=env,
+        )
 
         assert result.exit_code != 0
         assert "ANTHROPIC_API_KEY" in result.output
@@ -541,13 +671,21 @@ class TestProviderSelection:
         env = os.environ.copy()
         env.pop("OPENAI_API_KEY", None)
 
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--provider", "openai",
-        ], env=env)
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--provider",
+                "openai",
+            ],
+            env=env,
+        )
 
         assert result.exit_code != 0
         assert "OPENAI_API_KEY" in result.output
@@ -560,15 +698,24 @@ class TestOutputFormats:
         """Test JSON output format."""
         output_file = temp_dir / "result.json"
 
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--provider", "mock",
-            "--format", "json",
-            "--output", str(output_file),
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--provider",
+                "mock",
+                "--format",
+                "json",
+                "--output",
+                str(output_file),
+            ],
+        )
 
         assert result.exit_code in [EXIT_SUCCESS, EXIT_FAILURE]
         assert output_file.exists()
@@ -579,15 +726,24 @@ class TestOutputFormats:
         """Test Markdown output format."""
         output_file = temp_dir / "result.md"
 
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--provider", "mock",
-            "--format", "markdown",
-            "--output", str(output_file),
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--provider",
+                "mock",
+                "--format",
+                "markdown",
+                "--output",
+                str(output_file),
+            ],
+        )
 
         assert result.exit_code in [EXIT_SUCCESS, EXIT_FAILURE]
         assert output_file.exists()
@@ -598,15 +754,24 @@ class TestOutputFormats:
         """Test Turtle output format."""
         output_file = temp_dir / "result.ttl"
 
-        result = runner.invoke(main, [
-            "run",
-            "--iri", ":TestClass",
-            "--label", "Test Class",
-            "--parent", "owl:Thing",
-            "--provider", "mock",
-            "--format", "turtle",
-            "--output", str(output_file),
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--iri",
+                ":TestClass",
+                "--label",
+                "Test Class",
+                "--parent",
+                "owl:Thing",
+                "--provider",
+                "mock",
+                "--format",
+                "turtle",
+                "--output",
+                str(output_file),
+            ],
+        )
 
         assert result.exit_code in [EXIT_SUCCESS, EXIT_FAILURE]
         assert output_file.exists()

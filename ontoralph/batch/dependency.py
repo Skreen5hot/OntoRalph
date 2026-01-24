@@ -29,7 +29,9 @@ class DependencyGraph:
     def __init__(self) -> None:
         self._nodes: dict[str, ClassInfo] = {}
         self._edges: dict[str, set[str]] = defaultdict(set)  # child -> parents
-        self._reverse_edges: dict[str, set[str]] = defaultdict(set)  # parent -> children
+        self._reverse_edges: dict[str, set[str]] = defaultdict(
+            set
+        )  # parent -> children
 
     def add_class(self, class_info: ClassInfo) -> None:
         """Add a class to the dependency graph.
@@ -86,22 +88,26 @@ class DependencyGraph:
         # Check for self-references
         for iri, parents in self._edges.items():
             if iri in parents:
-                issues.append(DependencyIssue(
-                    class_iri=iri,
-                    issue_type="self_reference",
-                    message=f"Class {iri} has itself as parent",
-                    related_iris=[iri],
-                ))
+                issues.append(
+                    DependencyIssue(
+                        class_iri=iri,
+                        issue_type="self_reference",
+                        message=f"Class {iri} has itself as parent",
+                        related_iris=[iri],
+                    )
+                )
 
         # Check for circular dependencies
         cycles = self._find_cycles()
         for cycle in cycles:
-            issues.append(DependencyIssue(
-                class_iri=cycle[0],
-                issue_type="circular",
-                message=f"Circular dependency detected: {' -> '.join(cycle)}",
-                related_iris=cycle,
-            ))
+            issues.append(
+                DependencyIssue(
+                    class_iri=cycle[0],
+                    issue_type="circular",
+                    message=f"Circular dependency detected: {' -> '.join(cycle)}",
+                    related_iris=cycle,
+                )
+            )
 
         # Check for missing parents (only within the batch)
         internal_iris = set(self._nodes.keys())
@@ -109,12 +115,14 @@ class DependencyGraph:
             for parent in parents:
                 # Only flag if parent looks like a local IRI (starts with :)
                 if parent.startswith(":") and parent not in internal_iris:
-                    issues.append(DependencyIssue(
-                        class_iri=iri,
-                        issue_type="missing_parent",
-                        message=f"Class {iri} has parent {parent} not in batch",
-                        related_iris=[parent],
-                    ))
+                    issues.append(
+                        DependencyIssue(
+                            class_iri=iri,
+                            issue_type="missing_parent",
+                            message=f"Class {iri} has parent {parent} not in batch",
+                            related_iris=[parent],
+                        )
+                    )
 
         return issues
 
@@ -203,7 +211,13 @@ class DependencyOrderer:
                     in_degree[class_info.iri] += 1
 
         # Find all classes with no internal dependencies
-        queue = [c.iri for c, deg in zip(classes, [in_degree[c.iri] for c in classes], strict=False) if deg == 0]
+        queue = [
+            c.iri
+            for c, deg in zip(
+                classes, [in_degree[c.iri] for c in classes], strict=False
+            )
+            if deg == 0
+        ]
         ordered: list[str] = []
 
         while queue:

@@ -86,7 +86,9 @@ async def create_batch_job(request: BatchRequest) -> BatchResponse:
         Job ID and initial status
     """
     # Validate API key for non-mock providers
-    if request.provider != "mock" and (not request.api_key or not request.api_key.strip()):
+    if request.provider != "mock" and (
+        not request.api_key or not request.api_key.strip()
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"API key is required for provider '{request.provider}'",
@@ -217,13 +219,16 @@ async def stream_batch_progress(
     session = session_store.validate_session(token)
 
     if session is None:
+
         async def error_generator() -> AsyncGenerator[dict[str, str], None]:
             yield {
                 "event": "error",
-                "data": json.dumps({
-                    "code": ErrorCode.INVALID_TOKEN.value,
-                    "message": "Invalid or expired session token",
-                }),
+                "data": json.dumps(
+                    {
+                        "code": ErrorCode.INVALID_TOKEN.value,
+                        "message": "Invalid or expired session token",
+                    }
+                ),
             }
 
         return EventSourceResponse(error_generator())
@@ -232,13 +237,16 @@ async def stream_batch_progress(
     job = await manager.get_job(job_id)
 
     if job is None:
+
         async def not_found_generator() -> AsyncGenerator[dict[str, str], None]:
             yield {
                 "event": "error",
-                "data": json.dumps({
-                    "code": ErrorCode.NOT_FOUND.value,
-                    "message": f"Job not found: {job_id}",
-                }),
+                "data": json.dumps(
+                    {
+                        "code": ErrorCode.NOT_FOUND.value,
+                        "message": f"Job not found: {job_id}",
+                    }
+                ),
             }
 
         return EventSourceResponse(not_found_generator())
@@ -247,25 +255,29 @@ async def stream_batch_progress(
         # Send initial status
         yield {
             "event": "status",
-            "data": json.dumps({
-                "job_id": job.job_id,
-                "status": job.status.value,
-                "total": job.total_classes,
-                "completed": job.completed_count,
-            }),
+            "data": json.dumps(
+                {
+                    "job_id": job.job_id,
+                    "status": job.status.value,
+                    "total": job.total_classes,
+                    "completed": job.completed_count,
+                }
+            ),
         }
 
         # If job is already complete, send final status
         if job.status in (JobStatus.COMPLETE, JobStatus.CANCELLED, JobStatus.FAILED):
             yield {
                 "event": "job_complete",
-                "data": json.dumps({
-                    "status": job.status.value,
-                    "total": job.total_classes,
-                    "passed": job.passed_count,
-                    "failed": job.failed_count,
-                    "duration_seconds": job.duration_seconds,
-                }),
+                "data": json.dumps(
+                    {
+                        "status": job.status.value,
+                        "total": job.total_classes,
+                        "passed": job.passed_count,
+                        "failed": job.failed_count,
+                        "duration_seconds": job.duration_seconds,
+                    }
+                ),
             }
             return
 
@@ -284,24 +296,28 @@ async def stream_batch_progress(
                     result = job.results[i]
                     yield {
                         "event": "class_complete",
-                        "data": json.dumps({
-                            "index": i,
-                            "iri": result.iri,
-                            "label": result.label,
-                            "status": result.status,
-                            "final_definition": result.final_definition,
-                        }),
+                        "data": json.dumps(
+                            {
+                                "index": i,
+                                "iri": result.iri,
+                                "label": result.label,
+                                "status": result.status,
+                                "final_definition": result.final_definition,
+                            }
+                        ),
                     }
                 last_completed = current_completed
 
             # Send progress update
             yield {
                 "event": "progress",
-                "data": json.dumps({
-                    "completed": job.completed_count,
-                    "total": job.total_classes,
-                    "current_class": job.current_class,
-                }),
+                "data": json.dumps(
+                    {
+                        "completed": job.completed_count,
+                        "total": job.total_classes,
+                        "current_class": job.current_class,
+                    }
+                ),
             }
 
             await asyncio.sleep(0.5)
@@ -309,13 +325,15 @@ async def stream_batch_progress(
         # Send final status
         yield {
             "event": "job_complete",
-            "data": json.dumps({
-                "status": job.status.value,
-                "total": job.total_classes,
-                "passed": job.passed_count,
-                "failed": job.failed_count,
-                "duration_seconds": job.duration_seconds,
-            }),
+            "data": json.dumps(
+                {
+                    "status": job.status.value,
+                    "total": job.total_classes,
+                    "passed": job.passed_count,
+                    "failed": job.failed_count,
+                    "duration_seconds": job.duration_seconds,
+                }
+            ),
         }
 
     return EventSourceResponse(stream_generator())
@@ -361,7 +379,9 @@ async def download_batch_results(job_id: str) -> StreamingResponse:
             f"**Job ID:** {job.job_id}",
             f"**Status:** {job.status.value}",
             f"**Created:** {job.created_at.isoformat()}",
-            f"**Duration:** {job.duration_seconds:.1f}s" if job.duration_seconds else "",
+            f"**Duration:** {job.duration_seconds:.1f}s"
+            if job.duration_seconds
+            else "",
             "",
             "## Results",
             "",

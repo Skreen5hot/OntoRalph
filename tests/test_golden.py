@@ -217,7 +217,12 @@ class TestGoldenFileIntegrity:
         """Verify all test cases have required fields."""
         required_fields = ["id", "definition", "term", "is_ice"]
 
-        for section in ["passing_definitions", "failing_definitions", "ice_failures", "iterate_definitions"]:
+        for section in [
+            "passing_definitions",
+            "failing_definitions",
+            "ice_failures",
+            "iterate_definitions",
+        ]:
             if section in golden_data:
                 for case in golden_data[section]:
                     for field in required_fields:
@@ -230,7 +235,12 @@ class TestGoldenFileIntegrity:
         """Verify all case IDs are unique."""
         all_ids = []
 
-        for section in ["passing_definitions", "failing_definitions", "ice_failures", "iterate_definitions"]:
+        for section in [
+            "passing_definitions",
+            "failing_definitions",
+            "ice_failures",
+            "iterate_definitions",
+        ]:
             if section in golden_data:
                 for case in golden_data[section]:
                     all_ids.append(case["id"])

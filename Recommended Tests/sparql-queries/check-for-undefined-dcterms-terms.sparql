@@ -1,0 +1,78 @@
+PREFIX cco2: <https://www.commoncoreontologies.org/>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+
+SELECT ?resource ?label ?curatedIn ?value ?violation ?violationDescrption
+
+WHERE {
+   VALUES ?expectedResource { dcterms:abstract
+                              dcterms:accessRights
+                              dcterms:accrualMethod
+                              dcterms:accrualPeriodicity
+                              dcterms:accrualPolicy
+                              dcterms:alternative
+                              dcterms:audience
+                              dcterms:available
+                              dcterms:bibliographicCitation
+                              dcterms:conformsTo
+                              dcterms:contributor
+                              dcterms:coverage
+                              dcterms:created
+                              dcterms:creator
+                              dcterms:date
+                              dcterms:dateAccepted
+                              dcterms:dateCopyrighted
+                              dcterms:dateSubmitted
+                              dcterms:description
+                              dcterms:educationLevel
+                              dcterms:extent
+                              dcterms:format
+                              dcterms:hasFormat
+                              dcterms:hasPart
+                              dcterms:hasVersion
+                              dcterms:identifier
+                              dcterms:instructionalMethod
+                              dcterms:isFormatOf
+                              dcterms:isPartOf
+                              dcterms:isReferencedBy
+                              dcterms:isReplacedBy
+                              dcterms:isRequiredBy
+                              dcterms:issued
+                              dcterms:isVersionOf
+                              dcterms:language
+                              dcterms:license
+                              dcterms:mediator
+                              dcterms:medium
+                              dcterms:modified
+                              dcterms:provenance
+                              dcterms:publisher
+                              dcterms:references
+                              dcterms:relation
+                              dcterms:replaces
+                              dcterms:requires
+                              dcterms:rights
+                              dcterms:rightsHolder
+                              dcterms:source
+                              dcterms:spatial
+                              dcterms:subject
+                              dcterms:tableOfContents
+                              dcterms:temporal
+                              dcterms:title
+                              dcterms:type
+                              dcterms:valid   
+                              }
+  FILTER (STRSTARTS(STR(?resource), STR(dcterms:)) && ?resource != ?expectedResource)
+
+  OPTIONAL {?resource rdfs:label ?label }
+  OPTIONAL {?resource cco2:ont00001760 ?curatedIn }
+  
+  BIND ( ?expectedResource AS ?value )
+  BIND ( "Improper Dublin Core Terms Vocabulary" AS ?violation )
+  BIND ( CONCAT("The resource '", STR(?expectedResource), "' is not defined in Dublin Core Terms namespace.") AS ?violationDescription )
+  
+}

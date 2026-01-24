@@ -79,30 +79,34 @@ class TerminologyAnalyzer:
         # Check for inconsistent verb usage
         for bad_verb, good_verb in self.VERB_NORMALIZATION.items():
             if bad_verb in verb_usage and good_verb in verb_usage:
-                issues.append(ConsistencyIssue(
-                    issue_type=ConsistencyIssueType.TERMINOLOGY,
-                    severity="warning",
-                    message=(
-                        f"Inconsistent verb usage: some definitions use '{bad_verb}' "
-                        f"while others use '{good_verb}'"
-                    ),
-                    affected_classes=verb_usage[bad_verb] + verb_usage[good_verb],
-                    evidence=(
-                        f"'{bad_verb}' used in: {verb_usage[bad_verb]}\n"
-                        f"'{good_verb}' used in: {verb_usage[good_verb]}"
-                    ),
-                ))
+                issues.append(
+                    ConsistencyIssue(
+                        issue_type=ConsistencyIssueType.TERMINOLOGY,
+                        severity="warning",
+                        message=(
+                            f"Inconsistent verb usage: some definitions use '{bad_verb}' "
+                            f"while others use '{good_verb}'"
+                        ),
+                        affected_classes=verb_usage[bad_verb] + verb_usage[good_verb],
+                        evidence=(
+                            f"'{bad_verb}' used in: {verb_usage[bad_verb]}\n"
+                            f"'{good_verb}' used in: {verb_usage[good_verb]}"
+                        ),
+                    )
+                )
             elif bad_verb in verb_usage:
-                issues.append(ConsistencyIssue(
-                    issue_type=ConsistencyIssueType.TERMINOLOGY,
-                    severity="info",
-                    message=(
-                        f"Non-standard verb '{bad_verb}' used. "
-                        f"Consider using '{good_verb}' instead."
-                    ),
-                    affected_classes=verb_usage[bad_verb],
-                    evidence=f"'{bad_verb}' used in: {', '.join(verb_usage[bad_verb])}",
-                ))
+                issues.append(
+                    ConsistencyIssue(
+                        issue_type=ConsistencyIssueType.TERMINOLOGY,
+                        severity="info",
+                        message=(
+                            f"Non-standard verb '{bad_verb}' used. "
+                            f"Consider using '{good_verb}' instead."
+                        ),
+                        affected_classes=verb_usage[bad_verb],
+                        evidence=f"'{bad_verb}' used in: {', '.join(verb_usage[bad_verb])}",
+                    )
+                )
 
         return issues
 
@@ -182,16 +186,18 @@ class PatternAnalyzer:
 
             for pattern, iris in patterns_used.items():
                 if pattern != most_common and pattern != "unknown":
-                    issues.append(ConsistencyIssue(
-                        issue_type=ConsistencyIssueType.PATTERN,
-                        severity="info",
-                        message=(
-                            f"Pattern inconsistency: {len(iris)} definitions use "
-                            f"'{pattern}' pattern while most use '{most_common}'"
-                        ),
-                        affected_classes=iris,
-                        evidence=f"Pattern '{pattern}' used in: {', '.join(iris)}",
-                    ))
+                    issues.append(
+                        ConsistencyIssue(
+                            issue_type=ConsistencyIssueType.PATTERN,
+                            severity="info",
+                            message=(
+                                f"Pattern inconsistency: {len(iris)} definitions use "
+                                f"'{pattern}' pattern while most use '{most_common}'"
+                            ),
+                            affected_classes=iris,
+                            evidence=f"Pattern '{pattern}' used in: {', '.join(iris)}",
+                        )
+                    )
 
         # Check ICE definitions for proper pattern
         if class_infos:
@@ -199,18 +205,23 @@ class PatternAnalyzer:
                 if (
                     iri in class_infos
                     and class_infos[iri].is_ice
-                    and not any(re.match(p, definition, re.IGNORECASE) for p in self.ICE_PATTERNS)
+                    and not any(
+                        re.match(p, definition, re.IGNORECASE)
+                        for p in self.ICE_PATTERNS
+                    )
                 ):
-                    issues.append(ConsistencyIssue(
-                        issue_type=ConsistencyIssueType.PATTERN,
-                        severity="warning",
-                        message=(
-                            f"ICE definition for {iri} doesn't follow "
-                            f"'An ICE that...' pattern"
-                        ),
-                        affected_classes=[iri],
-                        evidence=f"Definition starts with: {definition[:50]}...",
-                    ))
+                    issues.append(
+                        ConsistencyIssue(
+                            issue_type=ConsistencyIssueType.PATTERN,
+                            severity="warning",
+                            message=(
+                                f"ICE definition for {iri} doesn't follow "
+                                f"'An ICE that...' pattern"
+                            ),
+                            affected_classes=[iri],
+                            evidence=f"Definition starts with: {definition[:50]}...",
+                        )
+                    )
 
         return issues
 
@@ -265,22 +276,23 @@ class ContradictionDetector:
         items = list(definitions.items())
 
         for i, (iri1, def1) in enumerate(items):
-            for iri2, def2 in items[i + 1:]:
+            for iri2, def2 in items[i + 1 :]:
                 contradictions = self._find_contradictions(def1, def2)
                 for phrase1, phrase2 in contradictions:
-                    issues.append(ConsistencyIssue(
-                        issue_type=ConsistencyIssueType.CONTRADICTION,
-                        severity="warning",
-                        message=(
-                            f"Potential contradiction: {iri1} uses '{phrase1}' "
-                            f"while {iri2} uses '{phrase2}'"
-                        ),
-                        affected_classes=[iri1, iri2],
-                        evidence=(
-                            f"'{phrase1}' in: {iri1}\n"
-                            f"'{phrase2}' in: {iri2}"
-                        ),
-                    ))
+                    issues.append(
+                        ConsistencyIssue(
+                            issue_type=ConsistencyIssueType.CONTRADICTION,
+                            severity="warning",
+                            message=(
+                                f"Potential contradiction: {iri1} uses '{phrase1}' "
+                                f"while {iri2} uses '{phrase2}'"
+                            ),
+                            affected_classes=[iri1, iri2],
+                            evidence=(
+                                f"'{phrase1}' in: {iri1}\n'{phrase2}' in: {iri2}"
+                            ),
+                        )
+                    )
 
         return issues
 

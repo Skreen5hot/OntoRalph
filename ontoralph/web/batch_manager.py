@@ -68,9 +68,7 @@ class BatchJob:
     @property
     def completed_count(self) -> int:
         """Number of classes completed (passed or failed)."""
-        return sum(
-            1 for r in self.results if r.status in ("pass", "fail", "error")
-        )
+        return sum(1 for r in self.results if r.status in ("pass", "fail", "error"))
 
     @property
     def passed_count(self) -> int:
@@ -148,8 +146,7 @@ class BatchJobManager:
             max_iterations=max_iterations,
             created_at=datetime.now(),
             results=[
-                ClassResult(iri=c.iri, label=c.label, status="pending")
-                for c in classes
+                ClassResult(iri=c.iri, label=c.label, status="pending") for c in classes
             ],
         )
 
@@ -248,15 +245,17 @@ class BatchJobManager:
 
                 # Notify event callback
                 if event_callback:
-                    await event_callback({
-                        "event": "class_start",
-                        "data": {
-                            "index": i,
-                            "iri": class_info.iri,
-                            "label": class_info.label,
-                            "total": job.total_classes,
-                        },
-                    })
+                    await event_callback(
+                        {
+                            "event": "class_start",
+                            "data": {
+                                "index": i,
+                                "iri": class_info.iri,
+                                "label": class_info.label,
+                                "total": job.total_classes,
+                            },
+                        }
+                    )
 
                 start_time = time.time()
 
@@ -274,16 +273,18 @@ class BatchJobManager:
                     )
 
                     if event_callback:
-                        await event_callback({
-                            "event": "class_complete",
-                            "data": {
-                                "index": i,
-                                "iri": class_info.iri,
-                                "status": result.status.value,
-                                "final_definition": result.final_definition,
-                                "iterations": result.total_iterations,
-                            },
-                        })
+                        await event_callback(
+                            {
+                                "event": "class_complete",
+                                "data": {
+                                    "index": i,
+                                    "iri": class_info.iri,
+                                    "status": result.status.value,
+                                    "final_definition": result.final_definition,
+                                    "iterations": result.total_iterations,
+                                },
+                            }
+                        )
 
                 except asyncio.CancelledError:
                     job.results[i].status = "cancelled"
@@ -299,14 +300,16 @@ class BatchJobManager:
                     )
 
                     if event_callback:
-                        await event_callback({
-                            "event": "class_error",
-                            "data": {
-                                "index": i,
-                                "iri": class_info.iri,
-                                "error": str(e),
-                            },
-                        })
+                        await event_callback(
+                            {
+                                "event": "class_error",
+                                "data": {
+                                    "index": i,
+                                    "iri": class_info.iri,
+                                    "error": str(e),
+                                },
+                            }
+                        )
 
             # Job complete
             if job.status != JobStatus.CANCELLED:
@@ -314,16 +317,18 @@ class BatchJobManager:
                 job.completed_at = datetime.now()
 
                 if event_callback:
-                    await event_callback({
-                        "event": "job_complete",
-                        "data": {
-                            "job_id": job.job_id,
-                            "total": job.total_classes,
-                            "passed": job.passed_count,
-                            "failed": job.failed_count,
-                            "duration_seconds": job.duration_seconds,
-                        },
-                    })
+                    await event_callback(
+                        {
+                            "event": "job_complete",
+                            "data": {
+                                "job_id": job.job_id,
+                                "total": job.total_classes,
+                                "passed": job.passed_count,
+                                "failed": job.failed_count,
+                                "duration_seconds": job.duration_seconds,
+                            },
+                        }
+                    )
 
         except asyncio.CancelledError:
             logger.info(f"Batch job {job.job_id} was cancelled")
@@ -335,13 +340,15 @@ class BatchJobManager:
             job.completed_at = datetime.now()
 
             if event_callback:
-                await event_callback({
-                    "event": "job_error",
-                    "data": {
-                        "job_id": job.job_id,
-                        "error": str(e),
-                    },
-                })
+                await event_callback(
+                    {
+                        "event": "job_error",
+                        "data": {
+                            "job_id": job.job_id,
+                            "error": str(e),
+                        },
+                    }
+                )
 
     async def _cleanup_old_jobs(self) -> None:
         """Remove jobs older than retention period."""
@@ -357,7 +364,10 @@ class BatchJobManager:
                     JobStatus.FAILED,
                 ):
                     end_time = job.completed_at or job.cancelled_at
-                    if end_time and (now - end_time).total_seconds() > self._retention_seconds:
+                    if (
+                        end_time
+                        and (now - end_time).total_seconds() > self._retention_seconds
+                    ):
                         to_remove.append(job_id)
 
             for job_id in to_remove:
