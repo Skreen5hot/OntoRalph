@@ -954,5 +954,54 @@ classes:
         console.print("[yellow]No files created (all already exist)[/yellow]")
 
 
+@main.command()
+@click.option(
+    "--host",
+    default="127.0.0.1",
+    help="Host to bind to",
+)
+@click.option(
+    "--port",
+    "-p",
+    default=8000,
+    help="Port to listen on",
+)
+@click.option(
+    "--reload",
+    is_flag=True,
+    help="Enable auto-reload for development",
+)
+def serve(host: str, port: int, reload: bool) -> None:
+    """Start the OntoRalph web UI server.
+
+    Launches a local web server providing a browser-based interface
+    for running the Ralph Loop interactively.
+
+    Example:
+        ontoralph serve
+        ontoralph serve --port 8080
+        ontoralph serve --reload  # for development
+    """
+    try:
+        import uvicorn
+    except ImportError:
+        raise click.ClickException(
+            "Web dependencies not installed. Install with: pip install ontoralph[web]"
+        ) from None
+
+    print_banner()
+    console.print()
+    console.print(f"[cyan]Starting web server at http://{host}:{port}[/cyan]")
+    console.print("[dim]Press Ctrl+C to stop[/dim]")
+    console.print()
+
+    uvicorn.run(
+        "ontoralph.web:app",
+        host=host,
+        port=port,
+        reload=reload,
+    )
+
+
 if __name__ == "__main__":
     main()
