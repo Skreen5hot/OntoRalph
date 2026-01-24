@@ -366,7 +366,7 @@
                             rows="12"
                             required
                             class="monospace"></textarea>
-                        <p class="help-text">Enter class definitions as a JSON array. Each object requires: iri, label, parent_class. Optional: sibling_classes, is_ice, current_definition.</p>
+                        <p class="help-text">Enter class definitions as a JSON array, or paste a JSON-LD ontology file (with @context/@graph). Each class object requires: iri, label, parent_class. Optional: sibling_classes, is_ice, current_definition.</p>
                     </div>
 
                     <div class="form-row">
@@ -1082,9 +1082,22 @@
                     // Parse input JSON
                     let classes;
                     try {
-                        classes = JSON.parse(this.batch.input);
-                        if (!Array.isArray(classes) || classes.length === 0) {
-                            throw new Error('Input must be a non-empty array of classes');
+                        const parsed = JSON.parse(this.batch.input);
+
+                        // Check if this is JSON-LD (has @context or @graph)
+                        if (parsed['@context'] || parsed['@graph']) {
+                            classes = this.parseJsonLdOntology(parsed);
+                            if (classes.length === 0) {
+                                throw new Error('No OWL classes found in the JSON-LD ontology');
+                            }
+                            this.showToast(`Parsed ${classes.length} classes from JSON-LD ontology`, 'info');
+                        } else if (Array.isArray(parsed)) {
+                            classes = parsed;
+                            if (classes.length === 0) {
+                                throw new Error('Input must be a non-empty array of classes');
+                            }
+                        } else {
+                            throw new Error('Input must be a JSON array of classes or a JSON-LD ontology');
                         }
                     } catch (e) {
                         this.batch.parseError = 'Invalid JSON: ' + e.message;
@@ -1432,6 +1445,161 @@
                     this.toast.type = type;
                     this.toast.show = true;
                     setTimeout(() => this.toast.show = false, 3000);
+                },
+
+                /**
+                 * Parse a JSON-LD OWL ontology and extract classes for batch processing.
+                 * Handles common RDF/OWL patterns in JSON-LD format.
+                 * @param {object} jsonLd - The parsed JSON-LD object
+                 * @returns {object[]} Array of BatchClassInput objects
+                 */
+                parseJsonLdOntology(jsonLd) {
+                    const classes = [];
+                    const classMap = new Map(); // IRI -> class info
+                    const childToParent = new Map(); // child IRI -> parent IRI
+
+                    // Get the graph (could be @graph array or the object itself)
+                    const graph = jsonLd['@graph'] || [jsonLd];
+
+                    // Common namespace prefixes for type checking
+                    const owlClass = 'http://www.w3.org/2002/07/owl#Class';
+                    const rdfsClass = 'http://www.w3.org/2000/01/rdf-schema#Class';
+
+                    // First pass: collect all classes and their properties
+                    for (const node of graph) {
+                        if (!node['@id']) continue;
+
+                        // Check if this is a class
+                        const types = this.getJsonLdValues(node, '@type');
+                        const isClass = types.some(t =>
+                            t === owlClass ||
+                            t === rdfsClass ||
+                            t === 'owl:Class' ||
+                            t === 'rdfs:Class'
+                        );
+
+                        if (!isClass) continue;
+
+                        const iri = node['@id'];
+
+                        // Skip blank nodes and common ontology classes
+                        if (iri.startsWith('_:')) continue;
+                        if (iri.includes('owl#') || iri.includes('rdf-syntax') || iri.includes('rdfs#')) continue;
+
+                        // Get label
+                        const labels = this.getJsonLdValues(node, 'http://www.w3.org/2000/01/rdf-schema#label') ||
+                                       this.getJsonLdValues(node, 'rdfs:label') ||
+                                       this.getJsonLdValues(node, 'label');
+                        const label = labels[0] || this.extractLocalName(iri);
+
+                        // Get parent class(es)
+                        const parentRefs = this.getJsonLdValues(node, 'http://www.w3.org/2000/01/rdf-schema#subClassOf') ||
+                                           this.getJsonLdValues(node, 'rdfs:subClassOf') ||
+                                           this.getJsonLdValues(node, 'subClassOf');
+
+                        // Extract parent IRIs (filter out blank nodes and restrictions)
+                        const parentIris = parentRefs
+                            .map(p => typeof p === 'object' ? p['@id'] : p)
+                            .filter(p => p && !p.startsWith('_:'));
+
+                        if (parentIris.length > 0) {
+                            childToParent.set(iri, parentIris[0]); // Use first parent
+                        }
+
+                        // Get existing definition if available
+                        const definitions = this.getJsonLdValues(node, 'http://purl.obolibrary.org/obo/IAO_0000115') || // IAO definition
+                                            this.getJsonLdValues(node, 'http://www.w3.org/2004/02/skos/core#definition') ||
+                                            this.getJsonLdValues(node, 'http://purl.org/dc/terms/description') ||
+                                            this.getJsonLdValues(node, 'http://www.w3.org/2000/01/rdf-schema#comment') ||
+                                            this.getJsonLdValues(node, 'rdfs:comment');
+                        const definition = definitions[0] || null;
+
+                        // Check if it's an ICE (Information Content Entity)
+                        // Look for BFO/CCO ICE parent or annotation
+                        const isIce = parentIris.some(p =>
+                            p.includes('InformationContentEntity') ||
+                            p.includes('ICE') ||
+                            p.includes('IAO_0000030') || // IAO information content entity
+                            p.includes('BFO_0000031')    // BFO generically dependent continuant
+                        );
+
+                        classMap.set(iri, {
+                            iri,
+                            label,
+                            parent_class: parentIris[0] || 'owl:Thing',
+                            sibling_classes: [],
+                            is_ice: isIce,
+                            current_definition: definition
+                        });
+                    }
+
+                    // Second pass: compute siblings (classes with same parent)
+                    const parentToChildren = new Map();
+                    for (const [childIri, parentIri] of childToParent) {
+                        if (!parentToChildren.has(parentIri)) {
+                            parentToChildren.set(parentIri, []);
+                        }
+                        parentToChildren.get(parentIri).push(childIri);
+                    }
+
+                    // Add siblings to each class
+                    for (const [iri, classInfo] of classMap) {
+                        const parentIri = childToParent.get(iri);
+                        if (parentIri) {
+                            const siblings = parentToChildren.get(parentIri) || [];
+                            classInfo.sibling_classes = siblings.filter(s => s !== iri).slice(0, 10); // Limit to 10 siblings
+                        }
+                        classes.push(classInfo);
+                    }
+
+                    return classes;
+                },
+
+                /**
+                 * Get values from a JSON-LD node property, handling various formats.
+                 * @param {object} node - JSON-LD node
+                 * @param {string} property - Property name
+                 * @returns {any[]} Array of values
+                 */
+                getJsonLdValues(node, property) {
+                    const value = node[property];
+                    if (!value) return [];
+
+                    // Handle array
+                    if (Array.isArray(value)) {
+                        return value.map(v => {
+                            if (typeof v === 'object') {
+                                return v['@value'] || v['@id'] || v;
+                            }
+                            return v;
+                        });
+                    }
+
+                    // Handle single object with @value
+                    if (typeof value === 'object') {
+                        return [value['@value'] || value['@id'] || value];
+                    }
+
+                    // Handle primitive
+                    return [value];
+                },
+
+                /**
+                 * Extract the local name from an IRI.
+                 * @param {string} iri - Full IRI
+                 * @returns {string} Local name
+                 */
+                extractLocalName(iri) {
+                    // Try to extract from # or /
+                    const hashIndex = iri.lastIndexOf('#');
+                    if (hashIndex !== -1) {
+                        return iri.substring(hashIndex + 1);
+                    }
+                    const slashIndex = iri.lastIndexOf('/');
+                    if (slashIndex !== -1) {
+                        return iri.substring(slashIndex + 1);
+                    }
+                    return iri;
                 }
             };
         }
