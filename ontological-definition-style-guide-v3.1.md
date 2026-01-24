@@ -4,11 +4,6 @@
 **Date**: 2026-01-23  
 **Purpose**: Ensure all TagTeam ontology definitions are rigorous, non-circular, BFO/CCO-compliant, and philosophically defensible against realist critique.  
 **Audience**: Ontology developers, contributors, reviewers, philosophers  
-**Changelog**:
-- v3.1 integrates additional Smithian realist critique; adds causal-historical constraint on discourse mediation, direction-of-fit grounding clarification, enumerated individuals modeling acknowledgment, tightened functional language.
-- v3.0 incorporates initial Smithian critique; adds discourse-mediation qualifier, constrained denotation acknowledgment, institutional grounding requirements, fallibilism note, direction-of-fit disclaimer, fiat boundary nuance, philosophical position statement.
-- v2.0 adds GDC/IBE nuance, process boundary distinction, refined ICE formula, mutual exclusivity checks.
-
 ---
 
 ## Preamble: Philosophical Position
