@@ -1,4 +1,4 @@
-# [NAME]
+# OntoRalph
 
 **Iterative definition refinement for BFO/CCO ontologies**
 
