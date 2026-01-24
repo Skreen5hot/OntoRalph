@@ -7,7 +7,7 @@ Generate → Critique → Refine → Verify until rigorous quality standards are
 __version__ = "1.0.0"
 __author__ = "OntoRalph Contributors"
 
-from ontoralph.core.models import ClassInfo, CheckResult, LoopResult
+from ontoralph.core.models import CheckResult, ClassInfo, LoopResult
 
 __all__ = [
     "__version__",

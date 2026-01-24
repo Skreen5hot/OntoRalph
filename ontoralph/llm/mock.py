@@ -4,7 +4,7 @@ This module provides a mock implementation of the LLM provider interface
 that can be used for testing without making actual API calls.
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 from ontoralph.core.models import CheckResult, ClassInfo, Severity
 from ontoralph.llm.base import (

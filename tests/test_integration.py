@@ -21,12 +21,23 @@ from ontoralph.batch.consistency import (
     check_consistency,
 )
 from ontoralph.batch.dependency import DependencyOrderer
-from ontoralph.batch.processor import BatchConfig, BatchProcessor, BatchProgress, BatchState
+from ontoralph.batch.processor import (
+    BatchConfig,
+    BatchProcessor,
+    BatchProgress,
+    BatchState,
+)
 from ontoralph.batch.sibling import SiblingExclusivityChecker, check_sibling_exclusivity
-from ontoralph.config import ConfigLoader, Settings
+from ontoralph.config import Settings
 from ontoralph.core.checklist import ChecklistEvaluator
 from ontoralph.core.loop import LoopConfig, LoopHooks, RalphLoop
-from ontoralph.core.models import CheckResult, ClassInfo, LoopResult, LoopState, Severity, VerifyStatus
+from ontoralph.core.models import (
+    CheckResult,
+    ClassInfo,
+    LoopResult,
+    Severity,
+    VerifyStatus,
+)
 from ontoralph.llm import MockProvider
 from ontoralph.llm.prompts import (
     format_class_context,

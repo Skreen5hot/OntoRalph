@@ -6,7 +6,6 @@ and contradictions across multiple class definitions.
 
 import logging
 import re
-from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 

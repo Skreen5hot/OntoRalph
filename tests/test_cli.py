@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from ontoralph.cli import main, EXIT_SUCCESS, EXIT_FAILURE
+from ontoralph.cli import EXIT_FAILURE, EXIT_SUCCESS, main
 
 
 @pytest.fixture

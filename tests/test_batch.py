@@ -14,21 +14,17 @@ from pathlib import Path
 
 import pytest
 from rdflib import Graph, Literal, Namespace, URIRef
-from rdflib.namespace import OWL, RDF, RDFS, SKOS
+from rdflib.namespace import OWL, RDF, RDFS
 
 from ontoralph.batch import (
     BatchConfig,
     BatchIntegrityChecker,
     BatchProcessor,
-    ConsistencyIssue,
     CrossClassConsistencyChecker,
     DependencyGraph,
-    DependencyOrderer,
-    ExclusivityIssue,
     OverlapType,
     SiblingExclusivityChecker,
     TurtleValidator,
-    ValidationIssue,
     check_batch_integrity,
     check_consistency,
     check_sibling_exclusivity,

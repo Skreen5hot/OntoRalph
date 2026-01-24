@@ -491,7 +491,7 @@ def batch(
     """
     # Load YAML file
     try:
-        with open(input_file, "r", encoding="utf-8") as f:
+        with open(input_file, encoding="utf-8") as f:
             data = yaml.safe_load(f)
     except Exception as e:
         raise click.ClickException(f"Failed to load YAML file: {e}")
@@ -626,9 +626,10 @@ def batch(
     # Validate output if requested
     validation_issues: list[Any] = []
     if validate_output and results:
-        from ontoralph.batch import TurtleValidator, BatchIntegrityChecker
-        from ontoralph.output import TurtleGenerator
         from rdflib import Graph
+
+        from ontoralph.batch import BatchIntegrityChecker, TurtleValidator
+        from ontoralph.output import TurtleGenerator
 
         # Generate combined graph
         gen = TurtleGenerator()

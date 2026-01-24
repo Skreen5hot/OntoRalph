@@ -11,7 +11,7 @@ It implements:
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ontoralph.core.models import CheckResult, Severity, VerifyStatus
 
@@ -332,7 +332,7 @@ class ChecklistEvaluator:
         definition: str,
         term: str,
         is_ice: bool,
-        parent_class: Optional[str] = None,
+        parent_class: str | None = None,
     ) -> list[CheckResult]:
         """Evaluate a definition against all applicable checks.
 
@@ -369,7 +369,7 @@ class ChecklistEvaluator:
         self,
         definition: str,
         term: str,
-        parent_class: Optional[str] = None,
+        parent_class: str | None = None,
     ) -> list[CheckResult]:
         """Check core requirements C1-C4.
 
@@ -567,7 +567,7 @@ class ChecklistEvaluator:
         return results
 
     def _check_genus_structure(
-        self, definition: str, parent_class: Optional[str]
+        self, definition: str, parent_class: str | None
     ) -> bool:
         """Check if definition has a genus (parent class) reference."""
         definition_lower = definition.lower()

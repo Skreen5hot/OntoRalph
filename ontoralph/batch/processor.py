@@ -8,13 +8,14 @@ import asyncio
 import hashlib
 import json
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from ontoralph.core.loop import LoopConfig, LoopHooks, RalphLoop
-from ontoralph.core.models import ClassInfo, LoopResult, VerifyStatus
+from ontoralph.core.models import ClassInfo, LoopResult
 from ontoralph.llm.base import LLMProvider
 
 logger = logging.getLogger(__name__)

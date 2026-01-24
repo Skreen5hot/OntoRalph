@@ -4,10 +4,10 @@ This module handles loading and validating configuration from files and environm
 """
 
 from ontoralph.config.settings import (
+    DEFAULT_SETTINGS,
     ChecklistConfig,
     ConfigLoader,
     CustomRule,
-    DEFAULT_SETTINGS,
     LLMConfig,
     LLMProviderType,
     LoopConfig,

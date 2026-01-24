@@ -16,13 +16,9 @@ import pytest
 import yaml
 
 from ontoralph.config import (
-    ChecklistConfig,
     ConfigLoader,
     CustomRule,
-    LLMConfig,
     LLMProviderType,
-    LoopConfig,
-    OutputConfig,
     OutputFormat,
     PromptConfig,
     RuleSeverity,

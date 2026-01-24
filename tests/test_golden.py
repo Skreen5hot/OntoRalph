@@ -16,7 +16,6 @@ import yaml
 from ontoralph.core.checklist import ChecklistEvaluator
 from ontoralph.core.models import VerifyStatus
 
-
 # Load golden file fixture
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 GOLDEN_FILE = FIXTURES_DIR / "golden_definitions.yaml"

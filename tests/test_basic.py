@@ -1,6 +1,5 @@
 """Basic tests for OntoRalph."""
 
-import pytest
 
 
 def test_placeholder():

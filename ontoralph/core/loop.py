@@ -5,9 +5,9 @@ Generate -> Critique -> Refine -> Verify cycle.
 """
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Callable, Protocol
+from typing import Protocol
 
 from ontoralph.core.checklist import ChecklistEvaluator
 from ontoralph.core.models import (

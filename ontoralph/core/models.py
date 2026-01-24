@@ -6,7 +6,6 @@ for representing class information, check results, and loop state.
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -47,7 +46,7 @@ class ClassInfo(BaseModel):
         default=False,
         description="Whether this is an Information Content Entity",
     )
-    current_definition: Optional[str] = Field(
+    current_definition: str | None = Field(
         default=None,
         description="Current definition to improve, or None for new class",
     )
@@ -85,7 +84,7 @@ class LoopIteration(BaseModel):
     critique_results: list[CheckResult] = Field(
         description="Results from CRITIQUE phase"
     )
-    refined_definition: Optional[str] = Field(
+    refined_definition: str | None = Field(
         default=None,
         description="Definition after REFINE phase (if refinement was needed)",
     )
@@ -156,7 +155,7 @@ class LoopState(BaseModel):
         )
 
     @property
-    def latest_definition(self) -> Optional[str]:
+    def latest_definition(self) -> str | None:
         """Most recent definition, or the initial definition if no iterations."""
         if self.iterations:
             return self.iterations[-1].final_definition
