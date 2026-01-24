@@ -77,7 +77,7 @@ class CustomRule(BaseModel):
             raise ValueError(f"Invalid regex pattern: {e}") from e
         return v
 
-    def matches(self, text: str) -> re.Match | None:
+    def matches(self, text: str) -> re.Match[str] | None:
         """Check if this rule's pattern matches the text.
 
         Args:
@@ -265,7 +265,7 @@ class Settings(BaseModel):
         return Settings.model_validate(current)
 
 
-def _deep_merge(base: dict, overrides: dict) -> None:
+def _deep_merge(base: dict[str, Any], overrides: dict[str, Any]) -> None:
     """Recursively merge overrides into base dict in-place.
 
     Args:
@@ -358,7 +358,7 @@ class ConfigLoader:
 
         return settings
 
-    def _load_yaml(self, path: Path) -> dict:
+    def _load_yaml(self, path: Path) -> dict[str, Any]:
         """Load YAML file as dict.
 
         Args:
@@ -386,7 +386,7 @@ class ConfigLoader:
 
         return overrides
 
-    def _set_nested(self, d: dict, path: tuple[str, ...], value: Any) -> None:
+    def _set_nested(self, d: dict[str, Any], path: tuple[str, ...], value: Any) -> None:
         """Set a nested dictionary value.
 
         Args:

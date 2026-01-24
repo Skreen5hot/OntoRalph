@@ -335,26 +335,43 @@ async def run_ralph_loop_stream(
             )
 
         # Create hooks with queue-based callbacks
-        hooks = LoopHooks(
-            on_iteration_start=lambda i,
-            s: asyncio.get_event_loop().call_soon_threadsafe(
+        def _wrap_iteration_start(i: int, s: LoopState) -> None:
+            asyncio.get_event_loop().call_soon_threadsafe(
                 lambda: asyncio.create_task(on_iteration_start(i, s))
-            ),
-            on_generate=lambda d: asyncio.get_event_loop().call_soon_threadsafe(
+            )
+
+        def _wrap_generate(d: str) -> None:
+            asyncio.get_event_loop().call_soon_threadsafe(
                 lambda: asyncio.create_task(on_generate(d))
-            ),
-            on_critique=lambda r: asyncio.get_event_loop().call_soon_threadsafe(
+            )
+
+        def _wrap_critique(r: list[CheckResult]) -> None:
+            asyncio.get_event_loop().call_soon_threadsafe(
                 lambda: asyncio.create_task(on_critique(r))
-            ),
-            on_refine=lambda d: asyncio.get_event_loop().call_soon_threadsafe(
+            )
+
+        def _wrap_refine(d: str) -> None:
+            asyncio.get_event_loop().call_soon_threadsafe(
                 lambda: asyncio.create_task(on_refine(d))
-            ),
-            on_verify=lambda s, r: asyncio.get_event_loop().call_soon_threadsafe(
+            )
+
+        def _wrap_verify(s: VerifyStatus, r: list[CheckResult]) -> None:
+            asyncio.get_event_loop().call_soon_threadsafe(
                 lambda: asyncio.create_task(on_verify(s, r))
-            ),
-            on_iteration_end=lambda it: asyncio.get_event_loop().call_soon_threadsafe(
+            )
+
+        def _wrap_iteration_end(it: LoopIteration) -> None:
+            asyncio.get_event_loop().call_soon_threadsafe(
                 lambda: asyncio.create_task(on_iteration_end(it))
-            ),
+            )
+
+        hooks = LoopHooks(
+            on_iteration_start=_wrap_iteration_start,
+            on_generate=_wrap_generate,
+            on_critique=_wrap_critique,
+            on_refine=_wrap_refine,
+            on_verify=_wrap_verify,
+            on_iteration_end=_wrap_iteration_end,
         )
 
         # Create loop config and runner

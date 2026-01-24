@@ -7,7 +7,7 @@ Generate -> Critique -> Refine -> Verify cycle.
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Any, Protocol
 
 from ontoralph.core.checklist import ChecklistEvaluator
 from ontoralph.core.models import (
@@ -418,7 +418,7 @@ class RalphLoop:
 
         return merged
 
-    def _call_hook(self, hook_name: str, *args) -> None:
+    def _call_hook(self, hook_name: str, *args: Any) -> None:
         """Safely call a hook if it's defined.
 
         Args:

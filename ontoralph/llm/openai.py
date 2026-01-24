@@ -48,12 +48,12 @@ class OpenAIProvider(LLMProvider):
     - Graceful error handling
     """
 
-    DEFAULT_MODEL = "gpt-4o"
-    DEFAULT_MAX_TOKENS = 2000
-    DEFAULT_TEMPERATURE = 0.3
-    DEFAULT_TIMEOUT = 60.0
-    MAX_RETRIES = 3
-    BASE_RETRY_DELAY = 1.0
+    DEFAULT_MODEL: str = "gpt-4o"
+    DEFAULT_MAX_TOKENS: int = 2000
+    DEFAULT_TEMPERATURE: float = 0.3
+    DEFAULT_TIMEOUT: float = 60.0
+    MAX_RETRIES: int = 3
+    BASE_RETRY_DELAY: float = 1.0
 
     def __init__(
         self,
@@ -277,7 +277,7 @@ class OpenAIProvider(LLMProvider):
         Returns:
             Delay in seconds.
         """
-        return self.BASE_RETRY_DELAY * (2**attempt)
+        return float(self.BASE_RETRY_DELAY * (2**attempt))
 
     def _get_retry_after(self, error: Any) -> float | None:
         """Extract retry-after header from error if present.
@@ -290,9 +290,9 @@ class OpenAIProvider(LLMProvider):
         """
         try:
             if hasattr(error, "response") and error.response:
-                retry_after = error.response.headers.get("retry-after")
-                if retry_after:
-                    return float(retry_after)
+                retry_after_str = error.response.headers.get("retry-after")
+                if retry_after_str:
+                    return float(str(retry_after_str))
         except (ValueError, AttributeError):
             pass
         return None

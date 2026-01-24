@@ -12,6 +12,7 @@ from enum import Enum
 
 from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
+from rdflib.term import Node
 
 logger = logging.getLogger(__name__)
 
@@ -361,7 +362,7 @@ class TurtleValidator:
 
         return issues
 
-    def _check_term(self, term: URIRef) -> list[ValidationIssue]:
+    def _check_term(self, term: Node) -> list[ValidationIssue]:
         """Check a single term for namespace validity.
 
         Args:
@@ -432,7 +433,7 @@ class TurtleValidator:
 
         return issues
 
-    def _short_iri(self, iri: URIRef | str) -> str:
+    def _short_iri(self, iri: Node | str) -> str:
         """Get short form of an IRI.
 
         Args:

@@ -21,7 +21,7 @@ from rich.text import Text
 from ontoralph import __version__
 from ontoralph.core.checklist import ChecklistEvaluator
 from ontoralph.core.loop import LoopConfig, LoopHooks, RalphLoop
-from ontoralph.core.models import ClassInfo, LoopResult, VerifyStatus
+from ontoralph.core.models import CheckResult, ClassInfo, LoopResult, VerifyStatus
 from ontoralph.llm import ClaudeProvider, MockProvider, OpenAIProvider
 from ontoralph.output import ReportGenerator, TurtleGenerator
 
@@ -103,12 +103,12 @@ def create_progress_hooks(progress: Progress, task_id: Any, verbose: bool) -> Lo
         if verbose:
             console.print(f"  [dim]Generated:[/dim] {definition[:80]}...")
 
-    def on_critique(_status: VerifyStatus, results: list) -> None:
+    def on_critique(_status: VerifyStatus, results: list[CheckResult]) -> None:
         failed = [r for r in results if not r.passed]
         if verbose and failed:
             console.print(f"  [dim]Issues found:[/dim] {len(failed)}")
 
-    def on_verify(status: VerifyStatus, _results: list) -> None:
+    def on_verify(status: VerifyStatus, _results: list[CheckResult]) -> None:
         if status == VerifyStatus.PASS:
             progress.update(task_id, description="[green]Passed[/green]")
         elif status == VerifyStatus.FAIL:
@@ -138,14 +138,14 @@ def output_result(
         quiet: If True, suppress info messages.
     """
     if format == "turtle":
-        generator = TurtleGenerator()
-        content = generator.generate_from_result(result)
+        turtle_gen = TurtleGenerator()
+        content = turtle_gen.generate_from_result(result)
     elif format == "markdown":
-        generator = ReportGenerator()
-        content = generator.generate_markdown(result)
+        report_gen = ReportGenerator()
+        content = report_gen.generate_markdown(result)
     elif format == "json":
-        generator = ReportGenerator()
-        content = generator.generate_json(result)
+        json_gen = ReportGenerator()
+        content = json_gen.generate_json(result)
     else:
         raise click.ClickException(f"Unknown format: {format}")
 
@@ -671,19 +671,19 @@ def batch(
             console.print()
             console.print("[yellow]Output Validation Issues:[/yellow]")
 
-            for issue in validation_issues:
+            for val_issue in validation_issues:
                 severity_color = (
-                    "red" if issue.severity.value == "violation" else "yellow"
+                    "red" if val_issue.severity.value == "violation" else "yellow"
                 )
                 console.print(
-                    f"  [{severity_color}]{issue.severity.value.upper()}[/{severity_color}] {issue.message}"
+                    f"  [{severity_color}]{val_issue.severity.value.upper()}[/{severity_color}] {val_issue.message}"
                 )
 
-            for issue in dup_labels:
-                console.print(f"  [yellow]WARNING[/yellow] {issue.message}")
+            for dup_issue in dup_labels:
+                console.print(f"  [yellow]WARNING[/yellow] {dup_issue.message}")
 
-            for issue in punning:
-                console.print(f"  [red]VIOLATION[/red] {issue.message}")
+            for pun_issue in punning:
+                console.print(f"  [red]VIOLATION[/red] {pun_issue.message}")
 
     # Print summary
     if not quiet:
