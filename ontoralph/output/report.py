@@ -102,7 +102,9 @@ class ReportGenerator:
             lines.append(f"- **Siblings**: {siblings}")
 
         if result.class_info.current_definition:
-            lines.append(f"- **Initial Definition**: {result.class_info.current_definition}")
+            lines.append(
+                f"- **Initial Definition**: {result.class_info.current_definition}"
+            )
 
         lines.append("")
 
@@ -202,11 +204,13 @@ class ReportGenerator:
         for iteration in result.iterations:
             html_parts.extend(self._format_iteration_html(iteration))
 
-        html_parts.extend([
-            "</div>",
-            "</body>",
-            "</html>",
-        ])
+        html_parts.extend(
+            [
+                "</div>",
+                "</body>",
+                "</html>",
+            ]
+        )
 
         return "\n".join(html_parts)
 
@@ -235,7 +239,10 @@ class ReportGenerator:
         lines.append("")
 
         # Refined definition (if different)
-        if iteration.refined_definition and iteration.refined_definition != iteration.generated_definition:
+        if (
+            iteration.refined_definition
+            and iteration.refined_definition != iteration.generated_definition
+        ):
             lines.append("**Refined Definition:**")
             lines.append(f"> {iteration.refined_definition}")
             lines.append("")
@@ -286,7 +293,9 @@ class ReportGenerator:
 
         # Checklist table
         lines.append("<table class='checklist'>")
-        lines.append("<tr><th>Check</th><th>Name</th><th>Status</th><th>Evidence</th></tr>")
+        lines.append(
+            "<tr><th>Check</th><th>Name</th><th>Status</th><th>Evidence</th></tr>"
+        )
 
         for check in iteration.critique_results:
             if self.show_all_checks or not check.passed:
@@ -321,7 +330,9 @@ class ReportGenerator:
             prev = result.iterations[i]
             curr = result.iterations[i + 1]
 
-            lines.append(f"### Iteration {prev.iteration_number} -> {curr.iteration_number}")
+            lines.append(
+                f"### Iteration {prev.iteration_number} -> {curr.iteration_number}"
+            )
             lines.append("")
 
             diff_text = self._diff.format_diff_text(
@@ -495,14 +506,14 @@ class BatchReportGenerator:
         lines.append("## Statistics")
         lines.append("")
         lines.append(f"- **Total Classes**: {total}")
-        lines.append(f"- **Passed**: {passed} ({100*passed/total:.1f}%)")
-        lines.append(f"- **Failed**: {failed} ({100*failed/total:.1f}%)")
+        lines.append(f"- **Passed**: {passed} ({100 * passed / total:.1f}%)")
+        lines.append(f"- **Failed**: {failed} ({100 * failed / total:.1f}%)")
 
         total_iterations = sum(r.total_iterations for r in results)
         total_duration = sum(r.duration_seconds for r in results)
 
         lines.append(f"- **Total Iterations**: {total_iterations}")
-        lines.append(f"- **Average Iterations**: {total_iterations/total:.1f}")
+        lines.append(f"- **Average Iterations**: {total_iterations / total:.1f}")
         lines.append(f"- **Total Duration**: {total_duration:.1f}s")
         lines.append("")
 
@@ -541,7 +552,9 @@ class BatchReportGenerator:
                     if failed_checks:
                         lines.append("**Failed Checks:**")
                         for check in failed_checks:
-                            lines.append(f"- **{check.code}** {check.name}: {check.evidence}")
+                            lines.append(
+                                f"- **{check.code}** {check.name}: {check.evidence}"
+                            )
                         lines.append("")
 
         return "\n".join(lines)
@@ -563,8 +576,6 @@ class BatchReportGenerator:
                 "total_iterations": sum(r.total_iterations for r in results),
                 "total_duration_seconds": sum(r.duration_seconds for r in results),
             },
-            "results": [
-                self.report_generator._result_to_dict(r) for r in results
-            ],
+            "results": [self.report_generator._result_to_dict(r) for r in results],
         }
         return json.dumps(data, indent=2, default=str)
