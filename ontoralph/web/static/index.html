@@ -1092,9 +1092,23 @@
                             }
                             this.showToast(`Parsed ${classes.length} classes from JSON-LD ontology`, 'info');
                         } else if (Array.isArray(parsed)) {
-                            classes = parsed;
-                            if (classes.length === 0) {
+                            if (parsed.length === 0) {
                                 throw new Error('Input must be a non-empty array of classes');
+                            }
+                            // Check if this is an array of JSON-LD nodes (has @id/@type) vs BatchClassInput (has iri/label)
+                            const firstItem = parsed[0];
+                            if (firstItem['@id'] || firstItem['@type']) {
+                                // This is a JSON-LD graph array - wrap it and parse
+                                classes = this.parseJsonLdOntology({ '@graph': parsed });
+                                if (classes.length === 0) {
+                                    throw new Error('No OWL classes found in the JSON-LD array');
+                                }
+                                this.showToast(`Parsed ${classes.length} classes from JSON-LD array`, 'info');
+                            } else if (firstItem.iri && firstItem.label && firstItem.parent_class) {
+                                // This is a proper BatchClassInput array
+                                classes = parsed;
+                            } else {
+                                throw new Error('Array items must have iri, label, and parent_class fields, or be JSON-LD nodes with @id/@type');
                             }
                         } else {
                             throw new Error('Input must be a JSON array of classes or a JSON-LD ontology');
