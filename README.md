@@ -2,7 +2,7 @@
 
 **Iterative definition refinement for BFO/CCO ontologies**
 
-[NAME] implements the Ralph Loop technique for ontology quality assurance: 
+OntoRalph implements the Ralph Loop technique for ontology quality assurance: 
 rather than accepting first-draft definitions, it cycles through 
 Generate → Critique → Refine → Verify until rigorous quality standards are met.
 
@@ -14,7 +14,7 @@ Most ontology definitions fail basic quality checks:
 - ❌ Missing aboutness ("An information content entity")
 - ❌ Vague differentia ("A thing related to documents")
 
-[NAME] catches these systematically and drives toward definitions that a 
+OntoRalph catches these systematically and drives toward definitions that a 
 BFO realist would approve.
 
 ## The Loop
