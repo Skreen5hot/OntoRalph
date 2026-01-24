@@ -93,7 +93,10 @@ class ResponseParser:
 
         # Validate we got something reasonable
         if len(text) < 10:
-            raise LLMResponseError(f"Definition too short: {text!r}")
+            raise LLMResponseError(
+                f"Definition too short ({len(text)} chars): {text!r}. "
+                "The LLM should generate a complete sentence definition."
+            )
 
         if not text[0].isupper():
             # Try to find a sentence that starts with a capital letter
@@ -124,7 +127,10 @@ class ResponseParser:
         json_data = self._extract_json(response)
 
         if json_data is None:
-            raise LLMResponseError("Could not find valid JSON in response")
+            raise LLMResponseError(
+                "Could not find valid JSON in LLM critique response. "
+                "The LLM should return check results in JSON array format."
+            )
 
         # Parse the JSON into CheckResult objects
         return self._parse_check_results(json_data)

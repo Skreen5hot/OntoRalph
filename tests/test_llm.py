@@ -197,6 +197,41 @@ class TestResponseParser:
         )
         assert any("denotes" in w for w in warnings)
 
+    def test_parse_definition_lowercase_start_with_later_sentence(
+        self, parser: ResponseParser
+    ) -> None:
+        """Test parsing when definition starts lowercase but contains valid sentence."""
+        response = "here is the definition: An ICE that denotes an occurrent."
+        # Should extract the capitalized sentence
+        result = parser.parse_definition(response)
+        assert result.startswith("An ICE")
+
+    def test_parse_critique_with_extra_text_around_json(
+        self, parser: ResponseParser
+    ) -> None:
+        """Test parsing critique with extra text around JSON array."""
+        response = """Here are the results:
+
+[{"code": "C1", "name": "Genus", "passed": true, "evidence": "OK"}]
+
+This should pass."""
+        results = parser.parse_critique(response)
+        assert len(results) == 1
+        assert results[0].code == "C1"
+
+    def test_parse_critique_json_in_code_block_with_invalid_content(
+        self, parser: ResponseParser
+    ) -> None:
+        """Test parsing when code block has invalid JSON but array exists."""
+        response = """```json
+invalid json here
+```
+
+[{"code": "C2", "passed": false, "evidence": "Failed"}]"""
+        results = parser.parse_critique(response)
+        assert len(results) == 1
+        assert results[0].code == "C2"
+
 
 class TestMockProvider:
     """Tests for MockProvider."""
@@ -516,3 +551,215 @@ class TestMockProviderIntegration:
         failed = [r for r in results if not r.passed]
         refined = await provider.refine(sample_class_info, definition, failed)
         assert refined != definition  # Should be different
+
+
+class TestPromptTemplateManagerExtended:
+    """Extended tests for PromptTemplateManager to improve coverage."""
+
+    def test_format_generate_with_siblings(self) -> None:
+        """Test generate prompt with sibling classes."""
+        from ontoralph.llm.prompts import format_generate_prompt
+
+        class_info = ClassInfo(
+            iri=":TestClass",
+            label="Test Class",
+            parent_class="cco:Entity",
+            sibling_classes=[":Sibling1", ":Sibling2"],
+            is_ice=False,
+        )
+
+        prompt = format_generate_prompt(class_info)
+        assert ":Sibling1" in prompt
+        assert ":Sibling2" in prompt
+        assert "Sibling classes" in prompt
+
+    def test_format_generate_with_current_definition(self) -> None:
+        """Test generate prompt with existing definition to improve."""
+        from ontoralph.llm.prompts import format_generate_prompt
+
+        class_info = ClassInfo(
+            iri=":TestClass",
+            label="Test Class",
+            parent_class="cco:Entity",
+            is_ice=False,
+            current_definition="Old definition to improve.",
+        )
+
+        prompt = format_generate_prompt(class_info)
+        assert "Old definition to improve." in prompt
+        assert "Current definition" in prompt
+
+    def test_format_critique_non_ice(self) -> None:
+        """Test critique prompt for non-ICE class."""
+        from ontoralph.llm.prompts import format_critique_prompt
+
+        class_info = ClassInfo(
+            iri=":TestClass",
+            label="Test Class",
+            parent_class="bfo:Continuant",
+            is_ice=False,
+        )
+
+        prompt = format_critique_prompt(class_info, "A continuant that exists.")
+        assert "C1" in prompt
+        assert "R1" in prompt
+        # Should NOT include ICE checks
+        assert "I1-I3" not in prompt
+
+    def test_format_refine_ice(self) -> None:
+        """Test refine prompt for ICE class."""
+        from ontoralph.llm.prompts import format_refine_prompt
+
+        class_info = ClassInfo(
+            iri=":TestICE",
+            label="Test ICE",
+            parent_class="cco:ICE",
+            is_ice=True,
+        )
+
+        issues = [
+            CheckResult(
+                code="R2",
+                name="Uses represents",
+                passed=False,
+                evidence="Found represents",
+                severity=Severity.RED_FLAG,
+            )
+        ]
+
+        prompt = format_refine_prompt(class_info, "An ICE that represents.", issues)
+        assert "R2" in prompt
+        assert "represents" in prompt
+        assert "denotes" in prompt  # ICE instructions
+
+    def test_format_class_context(self) -> None:
+        """Test formatting class context."""
+        from ontoralph.llm.prompts import format_class_context
+
+        class_info = ClassInfo(
+            iri=":TestClass",
+            label="Test Class",
+            parent_class="cco:Entity",
+            sibling_classes=[":Sibling1"],
+            is_ice=True,
+            current_definition="Old def.",
+        )
+
+        context = format_class_context(class_info)
+        assert ":TestClass" in context
+        assert "Test Class" in context
+        assert "cco:Entity" in context
+        assert "True" in context
+        assert ":Sibling1" in context
+        assert "Old def." in context
+
+    def test_template_manager_custom_critique(self) -> None:
+        """Test PromptTemplateManager with custom critique template."""
+        import tempfile
+        from pathlib import Path
+
+        from ontoralph.config import PromptConfig
+        from ontoralph.llm.prompts import PromptTemplateManager
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            templates_dir = Path(tmpdir)
+            (templates_dir / "critique.txt").write_text(
+                "Critique: ${definition} for ${label}",
+                encoding="utf-8",
+            )
+
+            config = PromptConfig(templates_dir=templates_dir)
+            manager = PromptTemplateManager(config)
+
+            class_info = ClassInfo(
+                iri=":Test",
+                label="Test Entity",
+                parent_class="owl:Thing",
+                is_ice=False,
+            )
+
+            prompt = manager.format_critique(class_info, "A test definition.")
+            assert "Critique:" in prompt
+            assert "A test definition." in prompt
+            assert "Test Entity" in prompt
+
+    def test_template_manager_custom_refine(self) -> None:
+        """Test PromptTemplateManager with custom refine template."""
+        import tempfile
+        from pathlib import Path
+
+        from ontoralph.config import PromptConfig
+        from ontoralph.llm.prompts import PromptTemplateManager
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            templates_dir = Path(tmpdir)
+            (templates_dir / "refine.txt").write_text(
+                "Refine: ${definition} Issues: ${issues}",
+                encoding="utf-8",
+            )
+
+            config = PromptConfig(templates_dir=templates_dir)
+            manager = PromptTemplateManager(config)
+
+            class_info = ClassInfo(
+                iri=":Test",
+                label="Test Entity",
+                parent_class="owl:Thing",
+                is_ice=False,
+            )
+
+            issues = [
+                CheckResult(
+                    code="C1",
+                    name="Missing genus",
+                    passed=False,
+                    evidence="No genus found",
+                    severity=Severity.REQUIRED,
+                )
+            ]
+
+            prompt = manager.format_refine(class_info, "Bad definition.", issues)
+            assert "Refine:" in prompt
+            assert "Bad definition." in prompt
+            assert "C1" in prompt
+
+    def test_template_manager_custom_system_prompt(self) -> None:
+        """Test PromptTemplateManager with custom system prompt."""
+        import tempfile
+        from pathlib import Path
+
+        from ontoralph.config import PromptConfig
+        from ontoralph.llm.prompts import PromptTemplateManager
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            templates_dir = Path(tmpdir)
+            (templates_dir / "system.txt").write_text(
+                "Custom system prompt for testing.",
+                encoding="utf-8",
+            )
+
+            config = PromptConfig(templates_dir=templates_dir)
+            manager = PromptTemplateManager(config)
+
+            prompt = manager.get_system_prompt()
+            assert "Custom system prompt" in prompt
+
+    def test_get_template_manager_with_config(self) -> None:
+        """Test get_template_manager with configuration."""
+        from ontoralph.config import PromptConfig
+        from ontoralph.llm.prompts import get_template_manager
+
+        config = PromptConfig(
+            generate_template="Test template ${label}"
+        )
+
+        manager = get_template_manager(config)
+        class_info = ClassInfo(
+            iri=":Test",
+            label="Test",
+            parent_class="owl:Thing",
+            is_ice=False,
+        )
+
+        prompt = manager.format_generate(class_info)
+        assert "Test template Test" in prompt

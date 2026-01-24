@@ -5,12 +5,18 @@ It implements:
 - RedFlagDetector: Pattern-based detection of anti-patterns (R1-R4)
 - CircularityChecker: Detects term appearing in its own definition
 - ChecklistEvaluator: Orchestrates all checks and determines scoring
+- CustomRuleEvaluator: Evaluates user-defined regex-based rules
 """
 
+from __future__ import annotations
+
 import re
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from ontoralph.core.models import CheckResult, Severity, VerifyStatus
+
+if TYPE_CHECKING:
+    from ontoralph.config.settings import CustomRule
 
 
 class RedFlagDetector:
@@ -238,6 +244,63 @@ class CircularityChecker:
         return unique_variants
 
 
+class CustomRuleEvaluator:
+    """Evaluates user-defined custom rules.
+
+    Custom rules are regex-based patterns defined in configuration
+    that check for project-specific anti-patterns or requirements.
+    """
+
+    def __init__(self, rules: list[CustomRule] | None = None) -> None:
+        """Initialize with custom rules.
+
+        Args:
+            rules: List of custom rules to evaluate.
+        """
+        self.rules = rules or []
+
+    def evaluate(self, definition: str) -> list[CheckResult]:
+        """Evaluate definition against custom rules.
+
+        Args:
+            definition: The definition text to check.
+
+        Returns:
+            List of check results for custom rules.
+        """
+        results: list[CheckResult] = []
+
+        for i, rule in enumerate(self.rules):
+            if not rule.enabled:
+                continue
+
+            match = rule.matches(definition)
+
+            # Map rule severity to Severity enum
+            severity_map = {
+                "error": Severity.RED_FLAG,
+                "warning": Severity.QUALITY,
+                "info": Severity.QUALITY,
+            }
+            severity = severity_map.get(rule.severity.value, Severity.QUALITY)
+
+            results.append(
+                CheckResult(
+                    code=f"X{i + 1}",  # Custom rule codes are X1, X2, etc.
+                    name=rule.name,
+                    passed=match is None,
+                    evidence=(
+                        f"{rule.message} (matched: '{match.group()}')"
+                        if match
+                        else f"No match for custom rule: {rule.name}"
+                    ),
+                    severity=severity,
+                )
+            )
+
+        return results
+
+
 class ChecklistEvaluator:
     """Evaluates definitions against the Ralph Loop checklist.
 
@@ -246,6 +309,7 @@ class ChecklistEvaluator:
     2. ICE Requirements (I1-I3): Must pass if is_ice=True
     3. Quality Checks (Q1-Q3): Desirable but not required
     4. Red Flags (R1-R4): Any failure causes FAIL status
+    5. Custom Rules (X1-Xn): User-defined pattern checks
 
     Scoring Logic:
     - PASS: All Core pass + All ICE pass (if applicable) + No Red Flags
@@ -253,10 +317,15 @@ class ChecklistEvaluator:
     - ITERATE: Core passes but Quality fails (needs refinement)
     """
 
-    def __init__(self) -> None:
-        """Initialize the checklist evaluator."""
+    def __init__(self, custom_rules: list[CustomRule] | None = None) -> None:
+        """Initialize the checklist evaluator.
+
+        Args:
+            custom_rules: Optional list of user-defined rules.
+        """
         self.red_flag_detector = RedFlagDetector()
         self.circularity_checker = CircularityChecker()
+        self.custom_rule_evaluator = CustomRuleEvaluator(custom_rules)
 
     def evaluate(
         self,
@@ -290,6 +359,9 @@ class ChecklistEvaluator:
 
         # Red Flags (R1-R4)
         results.extend(self.red_flag_detector.check(definition))
+
+        # Custom Rules (X1-Xn)
+        results.extend(self.custom_rule_evaluator.evaluate(definition))
 
         return results
 

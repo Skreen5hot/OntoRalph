@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ontoralph"
-version = "0.1.0"
+version = "1.0.0"
 description = "Iterative definition refinement for BFO/CCO ontologies using the Ralph Loop technique"
 readme = "README.md"
 license = "MIT"
@@ -82,6 +82,13 @@ addopts = [
 [tool.coverage.run]
 source = ["ontoralph"]
 branch = true
+omit = [
+    # Real API clients require API keys - tested via MockProvider
+    "ontoralph/llm/claude.py",
+    "ontoralph/llm/openai.py",
+    # Entry point
+    "ontoralph/__main__.py",
+]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -90,6 +97,8 @@ exclude_lines = [
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
     "if __name__ == .__main__.:",
+    # Protocol methods
+    "\\.\\.\\.",
 ]
 
 [tool.mypy]

@@ -1,0 +1,190 @@
+# Golden file test cases for OntoRalph
+# These definitions and their expected evaluations serve as regression tests.
+# Any change in behavior should be intentional and reflected here.
+
+# Format:
+# - id: unique identifier
+#   definition: the definition text
+#   term: the class label
+#   is_ice: whether it's an ICE
+#   parent_class: parent class IRI
+#   expected_status: PASS, FAIL, or ITERATE
+#   expected_checks: list of check codes that should pass/fail
+
+# ============================================================================
+# PASSING DEFINITIONS - These should always evaluate to PASS
+# ============================================================================
+
+passing_definitions:
+  - id: ice_basic_pass
+    definition: "An ICE that denotes a temporal region during which an occurrent takes place."
+    term: "Timestamp"
+    is_ice: true
+    parent_class: "cco:DesignativeICE"
+    expected_status: PASS
+    checks_must_pass:
+      - C1  # Genus present
+      - C2  # Differentia present
+      - C3  # Non-circular
+      - C4  # Single sentence
+      - I1  # ICE pattern start
+      - I2  # Uses denotes/is about
+      - R1  # No process verbs
+      - R2  # No represents
+      - R3  # No functional language
+      - R4  # No syntactic terms
+
+  - id: ice_is_about_pass
+    definition: "An ICE that is about the spatial position of a physical entity."
+    term: "Geolocation Record"
+    is_ice: true
+    parent_class: "cco:DescriptiveICE"
+    expected_status: PASS
+    checks_must_pass:
+      - C1
+      - C2
+      - C3
+      - C4
+      - I1
+      - I2
+
+  - id: non_ice_basic_pass
+    definition: "A continuant that participates in occurrents over time."
+    term: "Physical Object"
+    is_ice: false
+    parent_class: "bfo:MaterialEntity"
+    expected_status: PASS
+    checks_must_pass:
+      - C1
+      - C2
+      - C3
+      - C4
+
+  - id: ice_long_differentia
+    definition: "An ICE that denotes a corporation by means of a unique alphanumeric code assigned by an authoritative body."
+    term: "Company Identifier"
+    is_ice: true
+    parent_class: "cco:DesignativeICE"
+    expected_status: PASS
+    checks_must_pass:
+      - C1
+      - C2
+      - C3
+      - C4
+      - I1
+      - I2
+
+# ============================================================================
+# FAILING DEFINITIONS - These should always evaluate to FAIL (red flags)
+# ============================================================================
+
+failing_definitions:
+  - id: uses_represents
+    definition: "An ICE that represents a person's identity."
+    term: "Identity Document"
+    is_ice: true
+    parent_class: "cco:ICE"
+    expected_status: FAIL
+    checks_must_fail:
+      - R2  # Uses represents
+
+  - id: uses_process_verb_extracted
+    definition: "An ICE extracted from textual documents."
+    term: "Extracted Entity"
+    is_ice: true
+    parent_class: "cco:ICE"
+    expected_status: FAIL
+    checks_must_fail:
+      - R1  # Process verbs
+
+  - id: uses_process_verb_detected
+    definition: "An ICE detected in the input stream."
+    term: "Detected Entity"
+    is_ice: true
+    parent_class: "cco:ICE"
+    expected_status: FAIL
+    checks_must_fail:
+      - R1  # Process verbs
+
+  - id: uses_functional_language
+    definition: "An ICE that serves to identify a person."
+    term: "Identifier"
+    is_ice: true
+    parent_class: "cco:ICE"
+    expected_status: FAIL
+    checks_must_fail:
+      - R3  # Functional language
+
+  - id: uses_syntactic_terms
+    definition: "An ICE encoded as a noun phrase in natural language."
+    term: "Phrase Entity"
+    is_ice: true
+    parent_class: "cco:ICE"
+    expected_status: FAIL
+    checks_must_fail:
+      - R4  # Syntactic terms
+
+  - id: circular_definition
+    definition: "A Person Name is an ICE that denotes a person name."
+    term: "Person Name"
+    is_ice: true
+    parent_class: "cco:ICE"
+    expected_status: FAIL
+    checks_must_fail:
+      - C3  # Circularity
+
+  - id: multiple_red_flags
+    definition: "An ICE that represents something extracted from text."
+    term: "Bad Entity"
+    is_ice: true
+    parent_class: "cco:ICE"
+    expected_status: FAIL
+    checks_must_fail:
+      - R1  # Process verbs
+      - R2  # Uses represents
+
+# ============================================================================
+# ICE-SPECIFIC FAILURES - Missing ICE requirements
+# ============================================================================
+
+ice_failures:
+  - id: ice_missing_ice_start
+    definition: "An entity that denotes a person."
+    term: "Person Reference"
+    is_ice: true
+    parent_class: "cco:ICE"
+    expected_status: FAIL
+    checks_must_fail:
+      - I1  # Should start with "An ICE"
+
+  - id: ice_missing_denotes
+    definition: "An ICE that contains person information."
+    term: "Person Info"
+    is_ice: true
+    parent_class: "cco:ICE"
+    expected_status: FAIL
+    checks_must_fail:
+      - I2  # Should use denotes/is about
+
+# ============================================================================
+# ITERATE CASES - Quality issues but no hard failures
+# ============================================================================
+
+iterate_definitions:
+  - id: too_short_but_valid
+    definition: "An ICE that denotes a thing."
+    term: "Short Entity"
+    is_ice: true
+    parent_class: "cco:ICE"
+    # Q3 fails - "a thing" is flagged as non-standard terminology
+    expected_status: ITERATE
+    checks_must_fail:
+      - Q3  # Non-standard terminology
+
+  - id: minimal_valid
+    definition: "An ICE that denotes something."
+    term: "Minimal Entity"
+    is_ice: true
+    parent_class: "cco:ICE"
+    # This passes - "something" is acceptable minimal differentia
+    expected_status: PASS
