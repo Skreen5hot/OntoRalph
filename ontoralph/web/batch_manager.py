@@ -41,7 +41,7 @@ class ClassResult:
     error: str | None = None
     total_iterations: int | None = None
     duration_seconds: float | None = None
-    failed_checks: list[dict] | None = None  # [{code, name, evidence}]
+    failed_checks: list[dict[str, str]] | None = None  # [{code, name, evidence}]
 
 
 @dataclass
