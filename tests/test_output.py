@@ -645,12 +645,12 @@ class TestBatchReportGenerator:
         assert "**Passed**: 1" in markdown
         assert "**Failed**: 1" in markdown
 
-        # Check results table
-        assert "| Class | Status | Iterations | Duration |" in markdown
-
-        # Check failed classes section
-        assert "## Failed Classes" in markdown
+        # Check results section
+        assert "## Results" in markdown
+        assert "[PASS]" in markdown
+        assert "[FAIL]" in markdown
         assert "Failing Class" in markdown
+        assert "**Failed Checks:**" in markdown
 
     def test_generate_json(self, batch_results: list[LoopResult]) -> None:
         """Test batch JSON generation."""

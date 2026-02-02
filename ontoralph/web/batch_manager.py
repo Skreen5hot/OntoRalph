@@ -37,9 +37,11 @@ class ClassResult:
     label: str
     status: str  # 'pass', 'fail', 'error', 'pending', 'running'
     final_definition: str | None = None
+    original_definition: str | None = None
     error: str | None = None
     total_iterations: int | None = None
     duration_seconds: float | None = None
+    failed_checks: list[dict] | None = None  # [{code, name, evidence}]
 
 
 @dataclass
@@ -263,13 +265,32 @@ class BatchJobManager:
                     loop = RalphLoop(llm=llm_provider, config=config)
                     result: LoopResult = await loop.run(class_info)
 
+                    # Extract failed checks from last iteration
+                    failed_checks = None
+                    if not result.converged and result.iterations:
+                        last_iter = result.iterations[-1]
+                        failed = [
+                            c for c in last_iter.critique_results if not c.passed
+                        ]
+                        if failed:
+                            failed_checks = [
+                                {
+                                    "code": c.code,
+                                    "name": c.name,
+                                    "evidence": c.evidence,
+                                }
+                                for c in failed
+                            ]
+
                     job.results[i] = ClassResult(
                         iri=class_info.iri,
                         label=class_info.label,
                         status=result.status.value,
                         final_definition=result.final_definition,
+                        original_definition=class_info.current_definition,
                         total_iterations=result.total_iterations,
                         duration_seconds=time.time() - start_time,
+                        failed_checks=failed_checks,
                     )
 
                     if event_callback:
@@ -281,7 +302,9 @@ class BatchJobManager:
                                     "iri": class_info.iri,
                                     "status": result.status.value,
                                     "final_definition": result.final_definition,
+                                    "original_definition": class_info.current_definition,
                                     "iterations": result.total_iterations,
+                                    "failed_checks": failed_checks,
                                 },
                             }
                         )

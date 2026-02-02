@@ -452,8 +452,18 @@
                                     <span class="result-label" x-text="result.label || result.iri"></span>
                                     <span class="result-status" x-text="result.status"></span>
                                 </div>
+                                <div x-show="result.original_definition" class="result-original" style="margin: 4px 0; font-size: 0.9em; color: #666;">
+                                    <strong>Original:</strong> <span x-text="result.original_definition"></span>
+                                </div>
                                 <div x-show="result.final_definition" class="result-definition">
+                                    <strong>Ralph:</strong>
                                     <blockquote x-text="result.final_definition"></blockquote>
+                                </div>
+                                <div x-show="result.status === 'fail' && result.failed_checks?.length" class="result-failed-checks" style="margin: 4px 0; font-size: 0.85em; color: #c0392b;">
+                                    <strong>Failed Checks:</strong>
+                                    <template x-for="check in (result.failed_checks || [])" :key="check.code">
+                                        <div style="margin-left: 12px;" x-text="check.code + ' ' + check.name + ': ' + check.evidence"></div>
+                                    </template>
                                 </div>
                                 <div x-show="result.error" class="result-error" x-text="result.error"></div>
                             </div>
@@ -1088,9 +1098,9 @@
                         if (parsed['@context'] || parsed['@graph']) {
                             classes = this.parseJsonLdOntology(parsed);
                             if (classes.length === 0) {
-                                throw new Error('No OWL classes found in the JSON-LD ontology');
+                                throw new Error('No OWL entities found in the JSON-LD ontology');
                             }
-                            this.showToast(`Parsed ${classes.length} classes from JSON-LD ontology`, 'info');
+                            this.showToast(`Parsed ${classes.length} entities from JSON-LD ontology`, 'info');
                         } else if (Array.isArray(parsed)) {
                             if (parsed.length === 0) {
                                 throw new Error('Input must be a non-empty array of classes');
@@ -1101,9 +1111,9 @@
                                 // This is a JSON-LD graph array - wrap it and parse
                                 classes = this.parseJsonLdOntology({ '@graph': parsed });
                                 if (classes.length === 0) {
-                                    throw new Error('No OWL classes found in the JSON-LD array');
+                                    throw new Error('No OWL entities found in the JSON-LD array');
                                 }
-                                this.showToast(`Parsed ${classes.length} classes from JSON-LD array`, 'info');
+                                this.showToast(`Parsed ${classes.length} entities from JSON-LD array`, 'info');
                             } else if (firstItem.iri && firstItem.label && firstItem.parent_class) {
                                 // This is a proper BatchClassInput array
                                 classes = parsed;
@@ -1155,6 +1165,8 @@
                             label: c.label,
                             status: 'pending',
                             final_definition: null,
+                            original_definition: c.current_definition || null,
+                            failed_checks: null,
                             error: null
                         }));
 
@@ -1207,6 +1219,8 @@
                                     label: data.label || data.iri,
                                     status: data.status,
                                     final_definition: data.final_definition,
+                                    original_definition: data.original_definition || this.batch.results[idx].original_definition,
+                                    failed_checks: data.failed_checks,
                                     error: null
                                 };
                             }
@@ -1475,24 +1489,39 @@
                     // Get the graph (could be @graph array or the object itself)
                     const graph = jsonLd['@graph'] || [jsonLd];
 
-                    // Common namespace prefixes for type checking
-                    const owlClass = 'http://www.w3.org/2002/07/owl#Class';
-                    const rdfsClass = 'http://www.w3.org/2000/01/rdf-schema#Class';
+                    // Types we want to extract definitions for
+                    const includedTypes = new Set([
+                        'http://www.w3.org/2002/07/owl#Class',
+                        'http://www.w3.org/2000/01/rdf-schema#Class',
+                        'owl:Class',
+                        'rdfs:Class',
+                        'http://www.w3.org/2002/07/owl#NamedIndividual',
+                        'owl:NamedIndividual',
+                        'http://www.w3.org/2002/07/owl#ObjectProperty',
+                        'owl:ObjectProperty',
+                        'http://www.w3.org/2002/07/owl#DatatypeProperty',
+                        'owl:DatatypeProperty',
+                    ]);
+                    // Types to skip entirely
+                    const excludedTypes = new Set([
+                        'http://www.w3.org/2002/07/owl#Ontology',
+                        'owl:Ontology',
+                        'http://www.w3.org/2002/07/owl#AnnotationProperty',
+                        'owl:AnnotationProperty',
+                        'http://www.w3.org/2002/07/owl#SymmetricProperty',
+                        'owl:SymmetricProperty',
+                    ]);
 
-                    // First pass: collect all classes and their properties
+                    // First pass: collect all entities and their properties
                     for (const node of graph) {
                         if (!node['@id']) continue;
 
-                        // Check if this is a class
+                        // Check if this node has an included type
                         const types = this.getJsonLdValues(node, '@type');
-                        const isClass = types.some(t =>
-                            t === owlClass ||
-                            t === rdfsClass ||
-                            t === 'owl:Class' ||
-                            t === 'rdfs:Class'
-                        );
+                        const hasIncludedType = types.some(t => includedTypes.has(t));
+                        const hasOnlyExcludedTypes = types.length > 0 && types.every(t => excludedTypes.has(t));
 
-                        if (!isClass) continue;
+                        if (!hasIncludedType || hasOnlyExcludedTypes) continue;
 
                         const iri = node['@id'];
 
@@ -1501,32 +1530,89 @@
                         if (iri.includes('owl#') || iri.includes('rdf-syntax') || iri.includes('rdfs#')) continue;
 
                         // Get label
-                        const labels = this.getJsonLdValues(node, 'http://www.w3.org/2000/01/rdf-schema#label') ||
-                                       this.getJsonLdValues(node, 'rdfs:label') ||
-                                       this.getJsonLdValues(node, 'label');
-                        const label = labels[0] || this.extractLocalName(iri);
+                        const labelProps = [
+                            'http://www.w3.org/2000/01/rdf-schema#label',
+                            'rdfs:label',
+                            'label'
+                        ];
+                        let label = this.extractLocalName(iri);
+                        for (const prop of labelProps) {
+                            const vals = this.getJsonLdValues(node, prop);
+                            if (vals.length > 0) { label = vals[0]; break; }
+                        }
 
-                        // Get parent class(es)
-                        const parentRefs = this.getJsonLdValues(node, 'http://www.w3.org/2000/01/rdf-schema#subClassOf') ||
-                                           this.getJsonLdValues(node, 'rdfs:subClassOf') ||
-                                           this.getJsonLdValues(node, 'subClassOf');
+                        // Determine entity kind and get parent/supertype
+                        const isClass = types.some(t =>
+                            t === 'owl:Class' || t === 'rdfs:Class' ||
+                            t === 'http://www.w3.org/2002/07/owl#Class' ||
+                            t === 'http://www.w3.org/2000/01/rdf-schema#Class'
+                        );
+                        const isProperty = types.some(t =>
+                            t === 'owl:ObjectProperty' || t === 'owl:DatatypeProperty' ||
+                            t === 'http://www.w3.org/2002/07/owl#ObjectProperty' ||
+                            t === 'http://www.w3.org/2002/07/owl#DatatypeProperty'
+                        );
 
-                        // Extract parent IRIs (filter out blank nodes and restrictions)
-                        const parentIris = parentRefs
-                            .map(p => typeof p === 'object' ? p['@id'] : p)
-                            .filter(p => p && !p.startsWith('_:'));
+                        let parentIris = [];
+                        if (isClass) {
+                            // Classes: use rdfs:subClassOf
+                            const subClassProps = [
+                                'http://www.w3.org/2000/01/rdf-schema#subClassOf',
+                                'rdfs:subClassOf', 'subClassOf'
+                            ];
+                            for (const prop of subClassProps) {
+                                const vals = this.getJsonLdValues(node, prop);
+                                if (vals.length > 0) {
+                                    parentIris = vals.map(p => typeof p === 'object' ? p['@id'] : p)
+                                        .filter(p => p && !p.startsWith('_:'));
+                                    break;
+                                }
+                            }
+                        } else if (isProperty) {
+                            // Properties: use rdfs:subPropertyOf, fall back to owl:ObjectProperty/DatatypeProperty
+                            const subPropProps = [
+                                'http://www.w3.org/2000/01/rdf-schema#subPropertyOf',
+                                'rdfs:subPropertyOf', 'subPropertyOf'
+                            ];
+                            for (const prop of subPropProps) {
+                                const vals = this.getJsonLdValues(node, prop);
+                                if (vals.length > 0) {
+                                    parentIris = vals.map(p => typeof p === 'object' ? p['@id'] : p)
+                                        .filter(p => p && !p.startsWith('_:'));
+                                    break;
+                                }
+                            }
+                            if (parentIris.length === 0) {
+                                parentIris = types.some(t => t === 'owl:ObjectProperty' || t.includes('ObjectProperty'))
+                                    ? ['owl:ObjectProperty'] : ['owl:DatatypeProperty'];
+                            }
+                        } else {
+                            // NamedIndividuals: use @type as parent (excluding owl:NamedIndividual)
+                            parentIris = types.filter(t =>
+                                t !== 'owl:NamedIndividual' &&
+                                t !== 'http://www.w3.org/2002/07/owl#NamedIndividual'
+                            );
+                        }
 
                         if (parentIris.length > 0) {
-                            childToParent.set(iri, parentIris[0]); // Use first parent
+                            childToParent.set(iri, parentIris[0]);
                         }
 
                         // Get existing definition if available
-                        const definitions = this.getJsonLdValues(node, 'http://purl.obolibrary.org/obo/IAO_0000115') || // IAO definition
-                                            this.getJsonLdValues(node, 'http://www.w3.org/2004/02/skos/core#definition') ||
-                                            this.getJsonLdValues(node, 'http://purl.org/dc/terms/description') ||
-                                            this.getJsonLdValues(node, 'http://www.w3.org/2000/01/rdf-schema#comment') ||
-                                            this.getJsonLdValues(node, 'rdfs:comment');
-                        const definition = definitions[0] || null;
+                        const defProps = [
+                            'http://purl.obolibrary.org/obo/IAO_0000115',
+                            'http://www.w3.org/2004/02/skos/core#definition',
+                            'skos:definition',
+                            'http://purl.org/dc/terms/description',
+                            'dcterms:description',
+                            'http://www.w3.org/2000/01/rdf-schema#comment',
+                            'rdfs:comment'
+                        ];
+                        let definition = null;
+                        for (const prop of defProps) {
+                            const vals = this.getJsonLdValues(node, prop);
+                            if (vals.length > 0) { definition = vals[0]; break; }
+                        }
 
                         // Check if it's an ICE (Information Content Entity)
                         // Look for BFO/CCO ICE parent or annotation

@@ -517,45 +517,38 @@ class BatchReportGenerator:
         lines.append(f"- **Total Duration**: {total_duration:.1f}s")
         lines.append("")
 
-        # Results table
+        # Results
         lines.append("## Results")
         lines.append("")
-        lines.append("| Class | Status | Iterations | Duration |")
-        lines.append("|-------|--------|------------|----------|")
 
         for result in results:
             status = "PASS" if result.converged else "FAIL"
             lines.append(
-                f"| `{result.class_info.iri}` | {status} | "
-                f"{result.total_iterations} | {result.duration_seconds:.1f}s |"
+                f"### [{status}] {result.class_info.label}"
+                f" (`{result.class_info.iri}`)"
             )
-
-        lines.append("")
-
-        # Failed classes detail
-        failed_results = [r for r in results if not r.converged]
-        if failed_results:
-            lines.append("## Failed Classes")
             lines.append("")
-            for result in failed_results:
-                lines.append(f"### {result.class_info.label}")
-                lines.append("")
-                lines.append(f"**IRI**: `{result.class_info.iri}`")
-                lines.append("")
-                lines.append(f"**Final Definition**: {result.final_definition}")
+
+            if result.class_info.current_definition:
+                lines.append("**Original Definition:**  ")
+                lines.append(f'"{result.class_info.current_definition}"')
                 lines.append("")
 
-                # Show last iteration's failed checks
-                if result.iterations:
-                    last = result.iterations[-1]
-                    failed_checks = [c for c in last.critique_results if not c.passed]
-                    if failed_checks:
-                        lines.append("**Failed Checks:**")
-                        for check in failed_checks:
-                            lines.append(
-                                f"- **{check.code}** {check.name}: {check.evidence}"
-                            )
-                        lines.append("")
+            lines.append("**Ralph:**  ")
+            lines.append(f"> {result.final_definition}")
+            lines.append("")
+
+            # Show failed checks for FAIL results
+            if not result.converged and result.iterations:
+                last = result.iterations[-1]
+                failed_checks = [c for c in last.critique_results if not c.passed]
+                if failed_checks:
+                    lines.append("**Failed Checks:**")
+                    for check in failed_checks:
+                        lines.append(
+                            f"- **{check.code}** {check.name}: {check.evidence}"
+                        )
+                    lines.append("")
 
         return "\n".join(lines)
 

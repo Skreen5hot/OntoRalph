@@ -5,6 +5,20 @@ All notable changes to OntoRalph will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **JSON-LD Ontology Parsing** - Paste OWL ontologies directly into the web UI batch form
+  - Supports JSON-LD files with `@context`/`@graph` or plain arrays of JSON-LD nodes
+  - Extracts classes, named individuals, object properties, and datatype properties
+  - Reads definitions from `skos:definition`, `IAO_0000115`, `dcterms:description`, `rdfs:comment`
+  - Auto-detects parent classes, super-properties, and instance types
+- **Enhanced Batch Reports** - Improved output for both CLI and web UI
+  - Original definitions shown alongside Ralph-generated definitions
+  - Failed checks with code, name, and evidence displayed for failed classes
+  - Per-class detail sections replace summary table format
+
 ## [1.0.0] - 2025-01-24
 
 ### Added
