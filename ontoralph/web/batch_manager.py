@@ -269,9 +269,7 @@ class BatchJobManager:
                     failed_checks = None
                     if not result.converged and result.iterations:
                         last_iter = result.iterations[-1]
-                        failed = [
-                            c for c in last_iter.critique_results if not c.passed
-                        ]
+                        failed = [c for c in last_iter.critique_results if not c.passed]
                         if failed:
                             failed_checks = [
                                 {

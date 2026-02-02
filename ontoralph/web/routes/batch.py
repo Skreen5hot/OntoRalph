@@ -405,12 +405,12 @@ async def download_batch_results(job_id: str) -> StreamingResponse:
             summary_lines.append("")
 
             if result.original_definition:
-                summary_lines.append(f"**Original Definition:**  ")
+                summary_lines.append("**Original Definition:**  ")
                 summary_lines.append(f'"{result.original_definition}"')
                 summary_lines.append("")
 
             if result.final_definition:
-                summary_lines.append(f"**Ralph:**  ")
+                summary_lines.append("**Ralph:**  ")
                 summary_lines.append(f"> {result.final_definition}")
             elif result.error:
                 summary_lines.append(f"Error: {result.error}")

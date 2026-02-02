@@ -524,8 +524,7 @@ class BatchReportGenerator:
         for result in results:
             status = "PASS" if result.converged else "FAIL"
             lines.append(
-                f"### [{status}] {result.class_info.label}"
-                f" (`{result.class_info.iri}`)"
+                f"### [{status}] {result.class_info.label} (`{result.class_info.iri}`)"
             )
             lines.append("")
 
